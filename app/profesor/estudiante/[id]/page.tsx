@@ -14,7 +14,7 @@ export default async function EstudiantePage({ params }: { params: Promise<{ id:
   if (!session?.user) redirect(`/login?callbackUrl=/profesor/estudiante/${id}`)
   if (role !== "PROFESSOR") redirect("/dashboard")
 
-  const student = getUserById(id)
+  const student = await getUserById(id)
   if (!student || student.role !== "STUDENT") redirect("/profesor")
 
   return (

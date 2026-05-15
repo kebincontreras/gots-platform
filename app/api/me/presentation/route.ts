@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     )
   }
 
-  updateUserDriveEmbedUrl(userId, driveEmbedUrl)
+  await updateUserDriveEmbedUrl(userId, driveEmbedUrl)
 
   return NextResponse.json({ ok: true })
 }

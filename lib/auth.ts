@@ -20,7 +20,7 @@ export const authOptions: NextAuthOptions = {
         const password = credentials?.password ?? ""
         if (!email || !password) return null
 
-        const user = getUserByEmail(email)
+        const user = await getUserByEmail(email)
         if (!user) return null
 
         const ok = await bcrypt.compare(password, user.passwordHash)

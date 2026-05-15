@@ -12,7 +12,7 @@ export default async function ProfesorPage() {
   if (!session?.user) redirect("/login?callbackUrl=/profesor")
   if (role !== "PROFESSOR") redirect("/dashboard")
 
-  const students = listStudents()
+  const students = await listStudents()
 
   return (
     <main className="min-h-screen">

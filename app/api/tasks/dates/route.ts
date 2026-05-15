@@ -18,6 +18,5 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Invalid range. Use from/to YYYY-MM-DD." }, { status: 400 })
   }
 
-  return NextResponse.json({ dates: listTaskDatesInRange(from, to) })
+  return NextResponse.json({ dates: await listTaskDatesInRange(from, to) })
 }
-

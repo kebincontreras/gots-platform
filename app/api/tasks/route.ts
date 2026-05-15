@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   if (!isValidDateYYYYMMDD(date)) {
     return NextResponse.json({ error: "Invalid date. Use YYYY-MM-DD." }, { status: 400 })
   }
-  return NextResponse.json({ tasks: listTasksByDate(date) })
+  return NextResponse.json({ tasks: await listTasksByDate(date) })
 }
 
 export async function POST(req: Request) {
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing or invalid fields" }, { status: 400 })
   }
 
-  const task = createTask({
+  const task = await createTask({
     date,
     title,
     description: description ? description : null,

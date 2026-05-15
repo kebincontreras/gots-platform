@@ -9,7 +9,7 @@ export default async function DashboardPage() {
   const userId = (session?.user as any)?.id as string | undefined
   if (!userId) redirect("/login?callbackUrl=/dashboard")
 
-  const user = getUserById(userId)
+  const user = await getUserById(userId)
   if (!user) redirect("/login")
 
   if (user.role === "PROFESSOR") redirect("/profesor")
