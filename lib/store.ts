@@ -327,6 +327,22 @@ export async function listStudents(): Promise<Array<Pick<User, "id" | "name" | "
   }))
 }
 
+export async function updateUserRoleByEmail(email: string, role: Role): Promise<void> {
+  const normalizedEmail = email.trim().toLowerCase()
+  const updatedAt = nowIso()
+
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    await sql`UPDATE users SET role = ${role}, updated_at = ${updatedAt} WHERE email = ${normalizedEmail}`
+    return
+  }
+
+  const db = getSqliteDb()
+  db.prepare(`UPDATE users SET role = ?, updated_at = ? WHERE email = ?`).run(role, updatedAt, normalizedEmail)
+}
+
 export async function createTask(input: {
   date: string
   title: string
@@ -423,4 +439,3 @@ export async function listTaskDatesInRange(from: string, to: string): Promise<st
     .all(from, to) as any[]
   return rows.map((r) => r.date as string)
 }
-
