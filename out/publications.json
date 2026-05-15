@@ -1,0 +1,214 @@
+{
+  "publications": [
+    {
+      "id": 1,
+      "title": "Explicit Cartesian oval as a superconic surface for stigmatic imaging optical systems with real or virtual source or image",
+      "authors": "Alberto Silva-Lora, Rafael Torres",
+      "journal": "Proceedings of the Royal Society A",
+      "conference": "",
+      "year": 2020,
+      "image": "/Explicit_Cartesian_oval.png",
+      "pdfUrl": "https://royalsocietypublishing.org/doi/pdf/10.1098/rspa.2019.0894",
+      "externalUrl": "https://royalsocietypublishing.org/doi/full/10.1098/rspa.2019.0894",
+      "supplementaryMaterial": null,
+      "starred": true,
+      "abstract": "Cartesian ovals, also known as rigorously stigmatic surfaces, are the simplest optical systems capable of producing a perfect point image. Exist both implicit and explicit expressions to represent these surfaces, but they treat both refractive and reflective surfaces independently. Because of the complexity of explicit expressions, the ray-tracing techniques for these surfaces are implemented using third-party software. In this paper, we express Cartesian ovals as a degenerated superconic curve and get a new explicit formulation for Cartesian ovals capable of treating image formation using both object and image points, either real or virtual, and in this formulation can deal with both reflective and refractive rigorously stigmatic surfaces. Finally, using the resultant expressions and the vector Snell–Descartes Law, we propose a self-contained analytical ray-tracing technique for all these surfaces.",
+      "keywords": [
+        "Aberrations",
+        "Cartesian ovoids",
+        "Geometrical Optics",
+        "Stigmatism"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Superconical aplanatic ovoid singlet lenses",
+      "authors": "Alberto Silva-Lora, Rafael Torres",
+      "journal": "Journal of the Optical Society of America A",
+      "conference": "",
+      "year": 2020,
+      "image": "/Superconicalaplanatic.png",
+      "pdfUrl": "https://opg.optica.org/josaa/viewmedia.cfm?uri=josaa-37-7-1155",
+      "externalUrl": "https://opg.optica.org/josaa/viewmedia.cfm?uri=josaa-37-7-1155",
+      "supplementaryMaterial": null,
+      "starred": true,
+      "abstract": "In this work, we return to Descartes’s idea to develop a formalism to construct rigorously stigmatic singlet lenses comprising two Cartesian surfaces. Optical systems are built using a considerable number of spherical surfaces, presenting in most cases spherical aberration. Wasermann and Wolf proposed eliminating spherical aberration and minimizing third-order coma by using two adjacent aspherical surfaces. That is why, using a parametric formulation for Cartesian ovals, we propose the design of singlet lenses where the condition of rigorous stigmatism is guaranteed for each surface, and therefore, strictly speaking, in the pair of stigmatic points, the lens becomes an optical system free of spherical aberration. This formulation is unified to both refractive and reflective optical surfaces. Therefore, within the framework of the theory of rigorously stigmatic optical systems, making use of Cartesian surfaces for the construction of stigmatic ovoid singlet lenses, we achieve the same functionality of optical systems involving a set of spherical lenses. These lenses have the advantage of being formulated according to a generalized shape factor associated with the Coddington shape factor, allowing an easy classification of these stigmatic lenses. The ideal imaging is carried out by applying an exact ray-tracing method through these ovoid singlet lenses.",
+      "keywords": [
+        "Aberrations",
+        "Aplanatism",
+        "Cartesian ovoids",
+        "Ray tracing",
+        "Stigmatism"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Rigorously aplanatic Descartes ovoids",
+      "authors": "Alberto Silva-Lora, Rafael Torres",
+      "journal": "Journal of the Optical Society of America A",
+      "conference": "",
+      "year": 2021,
+      "image": "/Rigorously aplanatic Descartes ovoids.png",
+      "pdfUrl": "https://opg.optica.org/josaa/abstract.cfm?uri=josaa-38-8-1160",
+      "externalUrl": "https://opg.optica.org/josaa/abstract.cfm?uri=josaa-38-8-1160",
+      "supplementaryMaterial": null,
+      "starred": true,
+      "abstract": "It is known that, besides being stigmatic, spherical refracting surfaces are aplanatic at their Young points since they satisfy the Abbe sine condition rigorously. The Abbe sine condition is commonly applied to different optical systems using numerical methods or optimization processes, obtaining a design of approximately aplanatic systems. Here, we found several families of Cartesian surfaces, whose sets of each of these families constitute exactly aplanatic systems free of spherical aberration and coma. So, studying the different types of systems, it is found that rigorous aplanatism occurs for objects and images on curved surfaces.",
+      "keywords": [
+        "Aberrations",
+        "Aplanatism",
+        "Cartesian ovoids"
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Primary aberrations theory in optical systems composed of Cartesian refracting surfaces",
+      "authors": "Alberto Silva-Lora, Rafael Torres",
+      "journal": "Proceedings of the Royal Society A",
+      "conference": "",
+      "year": 2023,
+      "image": "/Primary aberrations theory in optical systems composed of Cartesian refracting surfaces.png",
+      "pdfUrl": "https://royalsocietypublishing.org/doi/pdf/10.1098/rspa.2023.0186",
+      "externalUrl": "https://royalsocietypublishing.org/doi/full/10.1098/rspa.2023.0186",
+      "supplementaryMaterial": null,
+      "starred": true,
+      "abstract": "Among the main defects present in optical systems are geometric aberrations, which are well characterized for spherical and aspherical surfaces. Special cases of aspherical surfaces are the Cartesian surfaces since they exhibit rigorous stigmatism and also, for a subfamily of these surfaces, aplanatism. However, for objects outside the stigmatic points, these surfaces also present geometric aberrations, so to evaluate their performance, it is necessary to characterize them. Therefore, in this work, the geometrical aberrations presented in Cartesian surfaces are studied, where the formulation of the coefficients for primary aberrations includes the corresponding expressions for the conic sections of revolution refractive surfaces as particular cases, and likewise the spherical refractive surface.",
+      "keywords": [
+        "Cartesian ovoids",
+        "Geometrical optics",
+        "Primary aberrations"
+      ]
+    },
+    {
+      "id": 10,
+      "title": "TRATAMIENTO DE SENALES EN DOMINIOS FRACCIONARIOS DE FOURIER",
+      "authors": "Marcos Amaris Gonzales, Rafael Angel Torres",
+      "journal": "",
+      "conference": "",
+      "year": 2008,
+      "image": "/TRATAMIENTO DE SENALES EN DOMINIOS FRACCIONARIOS DE FOURIER.png",
+      "pdfUrl": "https://www.researchgate.net/profile/Marcos-Amaris-Gonzalez/publication/267094656_TRATAMIENTO_DE_SENALES_EN_DOMINIOS_FRACCIONARIOS_DE_FOURIER/links/544502080cf2e6f0c0fc3b57/TRATAMIENTO-DE-SENALES-EN-DOMINIOS-FRACCIONARIOS-DE-FOURIER.pdf",
+      "externalUrl": "https://www.researchgate.net/publication/267094656_TRATAMIENTO_DE_SENALES_EN_DOMINIOS_FRACCIONARIOS_DE_FOURIER",
+      "supplementaryMaterial": null,
+      "starred": true,
+      "abstract": "In 1980 V. Namias invented an expression (Equation 1) called Fractional Fourier Transform (FrFT), which has been of increasing interest for the scientific community, because of several unique properties of this transform. In particular, it has been found very useful for the analysis of signals in time-frequency space. Here we are proposing an algorithm of this transform which implement the sampling theorem in a frantional domain. The properties and characteristics of this transform are tested. One of the most important characteristics of this analysis is that the FrFT can be interpreted as a rotation of the Wigner distribution associated to a function for a determined angle α = aπ/2 (a is the order fractional of the transformation). A filter implemented in this domain is called fractional Wiener filter. In the section 2 the equation proposed by Nam ́ıas is introduced, and some for particular cases, relation with the Wigner distribution and the fractional convolution is given. In the section 3 an algorithm of the discrete fractional Fourier transform with the sampling theorem in fractional domains is presented. The implementation of the fractional Wiener filter is in the section 4. The computational results are in the section 5, and finally the conclusions in the section 6.",
+      "keywords": [
+        "Fractional Fourier transform, sampling theorem in fractional Fourier domains and fractional Wiener lter"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Computational Correction of Eye Aberrations: A Physical Modeling Approach with Zernike Polynomials and Deep Learning",
+      "authors": "Kebin Contreras, Jorge Bacca",
+      "journal": "Conference",
+      "conference": "IEEE 2025 XXV Signal Processing, and Artificial Vision (STSIVA)",
+      "year": 2025,
+      "image": "/Computational_Correction.JPG",
+      "pdfUrl": "https://ieeexplore.ieee.org/abstract/document/11156245",
+      "externalUrl": "https://ieeexplore.ieee.org/abstract/document/11156245",
+      "supplementaryMaterial": null,
+      "starred": true,
+      "abstract": "A computational correction strategy for eye aberrations, specifically targeting astigmatism, is proposed. This method computationally designs a transformed image that allows individuals with astigmatism to perceive the original scene with improved clarity. To achieve this, a convolutional neural network (CNN) is trained to minimize the error between a well-defined reference image and an image generated by convolving the transformed image with a simulated point spread function (PSF) representative of a person with astigmatism, modeled using the second-order Zernike polynomials Z22 and Z−22 • Additionally, upsampling techniques are applied to simulate zoom effects in the scene. Quantitative results demonstrate that bicubic scaling with a factor of 2 significantly enhances the perceived visual acuity of the person, increasing SSIM from 0.86 to 0.98 and PSNR from 25.8 dB to 37.7 dB under moderate distortion (severity 1.0). The model was trained on images from the KITTI dataset with simulated aberrations and evaluated on the DIV2K dataset, confirming its generalization to out-of-distribution data. These results highlight the effectiveness of integrating physics-based optical modeling with deep learning for ocular aberration correction.",
+      "keywords": [
+        "Optical aberrations",
+        "computer vision",
+        "physical modeling"
+      ]
+    }
+  ],
+  "commentedPublications": [
+    {
+      "id": 4,
+      "title": "Aplanatism in stigmatic optical systems",
+      "authors": "Alberto Silva-Lora, Rafael Torres",
+      "journal": "Optics Letters",
+      "conference": "",
+      "year": 2020,
+      "image": "",
+      "pdfUrl": "https://opg.optica.org/ol/abstract.cfm?uri=ol-45-23-6390",
+      "externalUrl": "https://opg.optica.org/ol/abstract.cfm?uri=ol-45-23-6390",
+      "supplementaryMaterial": null,
+      "starred": true,
+      "abstract": "The minimization of spherical and coma aberrations in optical imaging systems is currently accomplished through the use of corrective aspheric optical surfaces. In this work, we develop a new, to the best of our knowledge, theory for the design of rigorously aplanatic optical systems, considering as a starting point the rigorous stigmatism theory of optical systems composed of Cartesian surfaces. The main characteristic of these surfaces is their, a priori, zero spherical aberration. In a general parametric formulation for systems made up of a set of these surfaces, the Abbe sine condition is adapted to simultaneously obtain the stigmatism and aplanatism conditions. Thus, we achieved the design of optical systems that in theory are immune to both coma and spherical aberrations.",
+      "keywords": [
+        "Aberrations",
+        "Aplanatism",
+        "Cartesian ovoids"
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Achromatic stigmatism: achromatic Cartesian ovoid",
+      "authors": "Alberto Silva-Lora, Rafael Torres",
+      "journal": "Journal of the Optical Society of America A",
+      "conference": "",
+      "year": 2022,
+      "image": "",
+      "pdfUrl": "https://opg.optica.org/josaa/abstract.cfm?uri=josaa-39-9-1524",
+      "externalUrl": "https://opg.optica.org/josaa/abstract.cfm?uri=josaa-39-9-1524",
+      "supplementaryMaterial": null,
+      "starred": true,
+      "abstract": "Monochromatic and chromatic aberrations are imaging defects mainly studied from a geometrical optics point of view. These defects are treated through optimization and minimization methods to achieve acceptable performance in optical imaging systems, where the correct choice of glass materials is one of the main challenges. The selection of glass materials is a complex issue that requires a large amount of computing power within sophisticated computational algorithms and enough professional experience in the area. However, in this work, we propose a new methodology to treat the chromatic and geometrical aberrations simultaneously by taking advantage of the relationship between form parameters of Cartesian surfaces and wavelength in the material. From this relationship, we obtain an achromatism principle that establishes the conditions for refracting systems to present a strictly achromatic stigmatism.",
+      "keywords": [
+        "Aberrations",
+        "Achromatism",
+        "Cartesian ovoids"
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Stigmatic aspherical refracting surfaces from Cartesian ovoids",
+      "authors": "Alberto Silva-Lora, Rafael Torres",
+      "journal": "Journal of the Optical Society of America A",
+      "conference": "",
+      "year": 2023,
+      "image": "",
+      "pdfUrl": "https://opg.optica.org/josaa/abstract.cfm?uri=josaa-40-4-C30",
+      "externalUrl": "https://opg.optica.org/josaa/abstract.cfm?uri=josaa-40-4-C30",
+      "supplementaryMaterial": null,
+      "starred": true,
+      "abstract": "A theory for Descartes ovoids has been developed in terms of four form parameters, (GOTS). This theory allows the design of optical imaging systems that, in addition to a rigorous stigmatism, exhibit the property of aplanatism, necessary for the proper imaging of extended objects. As a decisive step for the production of these systems, in this work, we propose a formulation of Descartes ovoids in the form of standard aspherical surfaces (ISO 10110-12: 2019), by means of explicit formulas for the corresponding aspheric coefficients. Thus, with these results, the designs developed with Descartes ovoids are finally translated into the language of aspherical surfaces for their production, inheriting the aspherical surfaces of all optical properties of Cartesian surfaces. Consequently, these results make this optical design methodology viable for the development of technological solutions using the current optical fabrication capabilities of the industry.",
+      "keywords": [
+        "Aberrations",
+        "Apherical surfaces",
+        "Cartesian ovoids"
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Hyperspectral camera as a compact payload architecture for remote sensing applications",
+      "authors": "David Morales-Norato, Sergio Urrea, Hans Garcia, Julian Rodriguez-Ferreira, Elizabeth Martinez, Henry Arguello, Alberto Silva-Lora, Rafael Torres, Ignacio F Acero, Francisco L Hernández, Lorena P Cárdenas, Sonia Rincón",
+      "journal": "Applied Optics",
+      "conference": "",
+      "year": 2023,
+      "image": "",
+      "pdfUrl": "https://opg.optica.org/ao/abstract.cfm?uri=ao-62-8-C88",
+      "externalUrl": "https://opg.optica.org/ao/abstract.cfm?uri=ao-62-8-C88",
+      "supplementaryMaterial": null,
+      "starred": true,
+      "abstract": "Monitoring and observation over the surface of the Earth have been a matter of global interest. In this path, recent efforts aim to develop a spatial mission to perform remote sensing applications. Mainly, CubeSat nanosatellites have emerged as a standard for developing low-weight and small-sized instruments. In terms of payloads, state-of-the-art optical systems for CubeSats are expensive and designed to work in general use cases. To overcome these limitations, this paper presents a 1.4 U compact optical system to acquire spectral images from a CubeSat standard satellite at the height of 550 km. To validate the proposed architecture, optical simulations using ray tracing simulation software are presented. Because the performance of computer vision tasks is highly related to data quality, we compared the optical system in terms of the classification performance on a real remote sensing application. The performances of the optical characterization and land cover classification show that the proposed optical system achieves a compact instrument, operating at a spectral range from 450 nm to 900 nm discretized on 35 spectral bands. The optical system has an overall \n-number of 3.41 with a ground sampling distance of 52.8 m and a swath of 40 km. Additionally, the design parameters for each optical element are publicly available for validation, repeatability, and reproducibility of the results.",
+      "keywords": [
+        "Remote sensing",
+        "Hyperspectral",
+        "CubeSat"
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Application of the Fractional Sampling Theorem for Light Propagation in Fresnel Domain",
+      "authors": "Daniel Fernando Borrero Landazabal, Rafael Angel Torres Amaris",
+      "journal": "",
+      "conference": "Frontiers in Optics + Laser Science APS/DLS",
+      "year": 2019,
+      "image": "",
+      "pdfUrl": "",
+      "externalUrl": "https://opg.optica.org/abstract.cfm?uri=fio-2019-JW3A.119",
+      "supplementaryMaterial": null,
+      "starred": true,
+      "abstract": "We show briefly how the fractional sampling theorem is applied to the case when the electric field is diffracted by a slit and we perform some numerical solutions to Fresnel integrals that satisfy the theorem",
+      "keywords": [
+        ""
+      ]
+    }
+  ]
+}

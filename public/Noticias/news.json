@@ -1,0 +1,34 @@
+{
+  "news": [
+    {
+      "id": 1,
+      "title": "Seminario: Fundamentos del índice de refracción en gradiente",
+      "description": "FUNDAMENTOS DEL ÍNDICE DE REFRACCIÓN EN GRADIENTE Y SU INCORPORACIÓN EN MODELOS DEL CRISTALINO. Edif. L.L. Demostraciones 313 — 6:00 - 7:00 P.M. Martes 11 de Noviembre, 2025. Ponente: Sthefania Pinto Basto (Estudiante de Pregrado).",
+      "summary": "Seminario sobre fundamentos del índice de refracción en gradiente y modelos del cristalino.",
+      "date": "2025-11-11",
+      "dateFormatted": "11 de Noviembre, 2025",
+      "image": "/Noticias/a1.jpeg",
+      "content": "Seguro no sabías que... Las cristalinas del núcleo del cristalino son algunas de las proteínas más longevas del organismo humano; muchas nunca se reemplazan desde antes del nacimiento. Con el paso de las décadas sufren modificaciones post-traduccionales acumulativas (oxidación, deamidación) que generan pigmentos amarillentos. Este envejecimiento molecular silencioso está directamente ligado a las cataratas.",
+      "featured": true,
+      "category": "Seminario",
+      "tags": ["seminario", "óptica"],
+      "author": "GOTS UIS",
+      "readTime": "3 min"
+    },
+    {
+      "id": 2,
+      "title": "Seguro no sabías que...",
+      "description": "La vida en la Tierra utiliza casi exclusivamente moléculas \"zurdas\" (aminoácidos levógiros), a pesar de que en el laboratorio se obtienen mezclas 50/50. Este fenómeno, llamado homoquiralidad, es un misterio sin resolver. Las teorías apuntan a causas aleatorias, influencia extraterrestre o efectos de la luz polarizada en el espacio.",
+      "summary": "La homoquiralidad en la vida terrestre sigue siendo un misterio científico sin resolver.",
+      "date": "2026-02-25",
+      "dateFormatted": "25 de Febrero, 2026",
+      "image": "/Noticias/a2.jpeg",
+      "content": "La vida en la Tierra utiliza casi exclusivamente moléculas \"zurdas\" (aminoácidos levógiros), a pesar de que en el laboratorio se obtienen mezclas 50/50. Este fenómeno, llamado homoquiralidad, es un misterio sin resolver. Las teorías apuntan a causas aleatorias, influencia extraterrestre o efectos de la luz polarizada en el espacio.",
+      "featured": true,
+      "category": "Curiosidad Científica",
+      "tags": ["química", "homoquiralidad", "ciencia"],
+      "author": "GOTS UIS",
+      "readTime": "2 min"
+    }
+  ]
+}

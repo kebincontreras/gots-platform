@@ -1,0 +1,51 @@
+{
+  "team": [
+    {
+      "id": 1,
+      "nombre": "Rafael Angel",
+      "apellido": "Torres Amaris",
+      "cargo": "Group Director",
+      "nivelEscolar": "Doctorado",
+      "institucion": "Universidad Industrial de Santander",
+      "imagen": "/team/Rafael.JPG",
+      "scholar": "https://scholar.google.com/citations?user=-xmGTmAAAAAJ&hl=es",
+      "paginaPersonal": "https://example.com/rafael",
+      "email": "rafael.torres@uis.edu.co",
+      "orcid": "0000-0000-0000-0001",
+      "areasInvestigacion": ["Quantum mechanics", "Signal Theory", "Optics"],
+      "activo": true
+    },
+    {
+      "id": 2,
+      "nombre": "Kebin",
+      "apellido": "Contreras",
+      "cargo": "Researcher",
+      "nivelEscolar": "PhD Student",     
+      "institucion": "Universidad Industrial de Santander",
+  "imagen": "/team/Kebin.jpg",
+      "scholar": "https://scholar.google.com/citations?user=s-Una0EAAAAJ&hl=es",
+      "paginaPersonal": "https://kebincontreras.xyz/",
+      "email": "kebin2258375@correo.uis.edu.co",
+      "orcid": "0009-0000-9122-1893",      
+      "areasInvestigacion": ["Physics","Visual Perception", "Mathematical Optimization"],
+      "activo": true
+    },
+
+    {
+      "id": 3,
+      "nombre": "Juan Andres",
+      "apellido": "Guarin Rojas",
+      "cargo": "Researcher",
+      "nivelEscolar": "Student",     
+      "institucion": "Universidad Industrial de Santander",
+  "imagen": "/team/JuanAndresGuarinRojas.jpeg",
+      "scholar": null,
+      "paginaPersonal": null,
+      "email": "aaaaaa@uis.edu.co",
+      "orcid": null,      
+      "areasInvestigacion": ["Physics","aaaaa", "aaaaa"],
+      "activo": true
+    }
+     
+  ]
+}
