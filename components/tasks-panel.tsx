@@ -154,6 +154,9 @@ export function TasksPanel({ canEdit }: { canEdit: boolean }) {
                 <div className="font-medium">{task.title}</div>
                 {task.description ? <div className="mt-1 text-sm text-muted-foreground">{task.description}</div> : null}
                 <div className="mt-2 text-xs text-muted-foreground">
+                  {t("tasks.dueDate")}: {task.date}
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
                   {t("tasks.createdAt")}: {new Date(task.createdAt).toLocaleString()}
                 </div>
               </div>

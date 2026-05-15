@@ -96,6 +96,7 @@ type TranslationKey =
   | "tasks.saving"
   | "tasks.noTasks"
   | "tasks.createdAt"
+  | "tasks.dueDate"
 
 const translations: Record<Language, Record<TranslationKey, string>> = {
   fr: {
@@ -201,6 +202,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "tasks.saving": "Enregistrement...",
     "tasks.noTasks": "Aucune tache pour cette date.",
     "tasks.createdAt": "Cree",
+    "tasks.dueDate": "A rendre",
   },
   es: {
     "nav.home": "Inicio",
@@ -304,6 +306,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "tasks.saving": "Guardando...",
     "tasks.noTasks": "No hay tareas para esta fecha.",
     "tasks.createdAt": "Creada",
+    "tasks.dueDate": "Entrega",
   },
   en: {
     "nav.home": "Home",
@@ -408,6 +411,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "tasks.saving": "Saving...",
     "tasks.noTasks": "No tasks for this date.",
     "tasks.createdAt": "Created",
+    "tasks.dueDate": "Due",
   },
 }
 
