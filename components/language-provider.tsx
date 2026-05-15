@@ -66,6 +66,7 @@ type TranslationKey =
   | "auth.invalidCredentials"
   | "header.access"
   | "header.panel"
+  | "header.students"
   | "header.tasks"
   | "dashboard.studentPanel"
   | "dashboard.studentGreeting"
@@ -165,6 +166,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
 
     "header.access": "Acceder",
     "header.panel": "Panel",
+    "header.students": "Estudiantes",
     "header.tasks": "Taches",
 
     "dashboard.studentPanel": "Espace etudiant",
@@ -267,6 +269,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
 
     "header.access": "Acceder",
     "header.panel": "Panel",
+    "header.students": "Estudiantes",
     "header.tasks": "Tareas",
 
     "dashboard.studentPanel": "Panel de estudiante",
@@ -370,6 +373,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
 
     "header.access": "Access",
     "header.panel": "Dashboard",
+    "header.students": "Students",
     "header.tasks": "Tasks",
 
     "dashboard.studentPanel": "Student dashboard",

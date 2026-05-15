@@ -98,7 +98,7 @@ export function Header() {
                     isScrolled ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
                   }`}
                 >
-                  {t("header.panel")}
+                  {(session.user as any).role === "PROFESSOR" ? t("header.students") : t("header.panel")}
                 </a>
                 {(session.user as any).role === "PROFESSOR" ? (
                   <a
@@ -187,7 +187,7 @@ export function Header() {
                   className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  {t("header.panel")}
+                  {(session.user as any).role === "PROFESSOR" ? t("header.students") : t("header.panel")}
                 </a>
                 {(session.user as any).role === "PROFESSOR" ? (
                   <a

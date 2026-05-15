@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth"
 import { listStudents } from "@/lib/store"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Button } from "@/components/ui/button"
 
 export default async function ProfesorPage() {
   const session = await getServerSession(authOptions)
@@ -19,7 +20,9 @@ export default async function ProfesorPage() {
       <Header />
       <div className="container mx-auto px-4 pt-28 pb-12">
         <h1 className="text-2xl font-semibold">Panel del profesor</h1>
-        <p className="text-muted-foreground mt-1">Lista de estudiantes y sus presentaciones.</p>
+        <p className="text-muted-foreground mt-1">
+          Lista de estudiantes y sus presentaciones. Haz clic en <span className="font-medium">Ver</span> para abrir el perfil del estudiante.
+        </p>
 
         <div className="mt-6 rounded-xl border overflow-hidden">
           <div className="px-5 py-3 border-b font-semibold">Estudiantes</div>
@@ -32,9 +35,9 @@ export default async function ProfesorPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-muted-foreground hidden sm:inline">{s.driveEmbedUrl ? "Con link" : "Sin link"}</span>
-                  <Link className="underline text-sm" href={`/profesor/estudiante/${s.id}`}>
-                    Ver
-                  </Link>
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/profesor/estudiante/${s.id}`}>Ver</Link>
+                  </Button>
                 </div>
               </div>
             ))}
