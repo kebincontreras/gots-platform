@@ -3,6 +3,14 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { getUserByEmail } from "@/lib/store"
 
+function isProfessorEmail(email: string) {
+  const list = (process.env.PROFESSOR_EMAILS ?? "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+  return list.includes(email.toLowerCase())
+}
+
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: {
@@ -30,7 +38,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role,
+          role: isProfessorEmail(user.email) ? "PROFESSOR" : user.role,
         } as any
       },
     }),
