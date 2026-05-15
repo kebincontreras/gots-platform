@@ -6,11 +6,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getImagePath(path: string): string {
-  const basePath = process.env.NODE_ENV === "production" ? "/GOTS.github.io" : ""
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
   return `${basePath}${path}`
 }
 
 export function getPagePath(path: string): string {
-  const basePath = process.env.NODE_ENV === "production" ? "/GOTS.github.io" : ""
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
   return `${basePath}${path}`
 }
