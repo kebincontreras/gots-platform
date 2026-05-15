@@ -8,15 +8,19 @@ function isValidDateYYYYMMDD(date: string) {
 }
 
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const { searchParams } = new URL(req.url)
-  const from = (searchParams.get("from") ?? "").trim()
-  const to = (searchParams.get("to") ?? "").trim()
-  if (!isValidDateYYYYMMDD(from) || !isValidDateYYYYMMDD(to)) {
-    return NextResponse.json({ error: "Invalid range. Use from/to YYYY-MM-DD." }, { status: 400 })
+    const { searchParams } = new URL(req.url)
+    const from = (searchParams.get("from") ?? "").trim()
+    const to = (searchParams.get("to") ?? "").trim()
+    if (!isValidDateYYYYMMDD(from) || !isValidDateYYYYMMDD(to)) {
+      return NextResponse.json({ error: "Invalid range. Use from/to YYYY-MM-DD." }, { status: 400 })
+    }
+
+    return NextResponse.json({ dates: await listTaskDatesInRange(from, to) })
+  } catch {
+    return NextResponse.json({ error: "Error cargando fechas." }, { status: 500 })
   }
-
-  return NextResponse.json({ dates: await listTaskDatesInRange(from, to) })
 }
