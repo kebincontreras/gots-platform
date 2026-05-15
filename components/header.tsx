@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Menu, X } from "lucide-react"
+import { usePathname } from "next/navigation"
 import { signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { getPagePath } from "@/lib/utils"
@@ -12,6 +13,8 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { data: session } = useSession()
   const { language, setLanguage, t } = useLanguage()
+  const pathname = usePathname()
+  const forceSolidHeader = pathname === "/dashboard" || pathname?.startsWith("/profesor")
 
   useEffect(() => {
     const handleScroll = () => {
@@ -36,7 +39,7 @@ export function Header() {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-background/95 backdrop-blur-md shadow-md" : "bg-transparent"
+        isScrolled || forceSolidHeader ? "bg-background/95 backdrop-blur-md shadow-md" : "bg-transparent"
       }`}
     >
       <div className="container mx-auto px-4 py-4">
@@ -44,7 +47,7 @@ export function Header() {
           <a href={getPagePath("/")} className="flex items-center">
             <span
               className={`text-xl font-sans font-bold transition-colors ${
-                isScrolled ? "text-foreground" : "text-white"
+                isScrolled || forceSolidHeader ? "text-foreground" : "text-white"
               }`}
             >
               GOTS Group Research
@@ -62,7 +65,7 @@ export function Header() {
                   key={item.href}
                   href={finalHref}
                   className={`text-sm font-sans font-medium transition-colors ${
-                    isScrolled ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
+                    isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
                   }`}
                 >
                   {item.label}
@@ -78,7 +81,7 @@ export function Header() {
                   className={`rounded px-2 py-1 text-xs font-semibold uppercase transition-colors ${
                     language === lang.code
                       ? "bg-accent text-accent-foreground"
-                      : isScrolled
+                      : isScrolled || forceSolidHeader
                         ? "text-foreground/80 hover:text-foreground"
                         : "text-white/80 hover:text-white"
                   }`}
@@ -95,7 +98,7 @@ export function Header() {
                 <a
                   href={(session.user as any).role === "PROFESSOR" ? "/profesor" : "/dashboard"}
                   className={`text-sm font-sans font-medium transition-colors ${
-                    isScrolled ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
+                    isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
                   }`}
                 >
                   {(session.user as any).role === "PROFESSOR" ? t("header.students") : t("header.panel")}
@@ -104,7 +107,7 @@ export function Header() {
                   <a
                     href="/profesor/tareas"
                     className={`text-sm font-sans font-medium transition-colors ${
-                      isScrolled ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
+                      isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
                     }`}
                   >
                     {t("header.tasks")}
@@ -114,7 +117,7 @@ export function Header() {
                   type="button"
                   onClick={() => signOut({ callbackUrl: "/" })}
                   className={`text-sm font-sans font-medium transition-colors ${
-                    isScrolled ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
+                    isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
                   }`}
                 >
                   {t("auth.signOut")}
@@ -124,7 +127,7 @@ export function Header() {
               <a
                 href="/login"
                 className={`text-sm font-sans font-medium transition-colors ${
-                  isScrolled ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
+                  isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
                 }`}
               >
                 {t("header.access")}
@@ -136,7 +139,7 @@ export function Header() {
           <Button
             variant="ghost"
             size="icon"
-            className={`md:hidden ${isScrolled ? "" : "text-white hover:text-white hover:bg-white/10"}`}
+            className={`md:hidden ${isScrolled || forceSolidHeader ? "" : "text-white hover:text-white hover:bg-white/10"}`}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
