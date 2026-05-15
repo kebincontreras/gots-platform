@@ -11,9 +11,6 @@ const nextConfig = {
         assetPrefix: isProd ? `/${repoName}/` : "",
       }
     : {}),
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
