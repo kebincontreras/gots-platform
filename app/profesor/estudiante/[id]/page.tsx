@@ -46,6 +46,18 @@ export default async function EstudiantePage({ params }: { params: Promise<{ id:
             <div className="rounded-xl border p-5 text-sm text-muted-foreground">Este estudiante aún no tiene link.</div>
           )}
 
+          {student.docEmbedUrl ? (
+            <div className="rounded-xl border overflow-hidden">
+              <div className="px-5 py-3 border-b">
+                <h2 className="font-semibold">Documento (Google Docs)</h2>
+                <p className="text-sm text-muted-foreground">
+                  Última actualización: {new Date(student.updatedAt).toDateString()}
+                </p>
+              </div>
+              <iframe title="Document preview" src={student.docEmbedUrl} className="w-full h-[75vh]" />
+            </div>
+          ) : null}
+
           <div className="rounded-xl border p-5">
             <h2 className="font-semibold">Calendario y tareas</h2>
             <p className="text-sm text-muted-foreground mt-1">

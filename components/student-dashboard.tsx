@@ -2,16 +2,18 @@
 
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { DriveForm } from "@/components/drive-form"
+import { LinksForm } from "@/components/links-form"
 import { TasksPanel } from "@/components/tasks-panel"
 import { useLanguage } from "@/components/language-provider"
 
 export function StudentDashboard({
   name,
   driveEmbedUrl,
+  docEmbedUrl,
 }: {
   name: string
   driveEmbedUrl: string | null
+  docEmbedUrl: string | null
 }) {
   const { t } = useLanguage()
   const greeting = t("dashboard.studentGreeting").replace("{name}", name)
@@ -25,10 +27,10 @@ export function StudentDashboard({
 
         <div className="mt-6 grid gap-6">
           <div className="rounded-xl border p-5">
-            <h2 className="font-semibold">{t("dashboard.presentationTitle")}</h2>
-            <p className="text-sm text-muted-foreground mt-1">{t("dashboard.presentationDesc")}</p>
+            <h2 className="font-semibold">{t("dashboard.linksTitle")}</h2>
+            <p className="text-sm text-muted-foreground mt-1">{t("dashboard.linksDesc")}</p>
             <div className="mt-4">
-              <DriveForm initialUrl={driveEmbedUrl ?? ""} />
+              <LinksForm initialPptUrl={driveEmbedUrl ?? ""} initialDocUrl={docEmbedUrl ?? ""} />
             </div>
           </div>
 
@@ -40,13 +42,25 @@ export function StudentDashboard({
             </div>
           </div>
 
-          {driveEmbedUrl ? (
-            <div className="rounded-xl border overflow-hidden">
-              <div className="px-5 py-3 border-b">
-                <h2 className="font-semibold">{t("dashboard.previewTitle")}</h2>
-              </div>
-              <iframe title="Drive preview" src={driveEmbedUrl} className="w-full h-[70vh]" allow="autoplay" />
-            </div>
+          {driveEmbedUrl || docEmbedUrl ? (
+            <>
+              {driveEmbedUrl ? (
+                <div className="rounded-xl border overflow-hidden">
+                  <div className="px-5 py-3 border-b">
+                    <h2 className="font-semibold">{t("dashboard.previewTitle")}</h2>
+                  </div>
+                  <iframe title="Drive preview" src={driveEmbedUrl} className="w-full h-[70vh]" allow="autoplay" />
+                </div>
+              ) : null}
+              {docEmbedUrl ? (
+                <div className="rounded-xl border overflow-hidden">
+                  <div className="px-5 py-3 border-b">
+                    <h2 className="font-semibold">{t("dashboard.docPreviewTitle")}</h2>
+                  </div>
+                  <iframe title="Document preview" src={docEmbedUrl} className="w-full h-[70vh]" />
+                </div>
+              ) : null}
+            </>
           ) : (
             <div className="rounded-xl border p-5 text-sm text-muted-foreground">{t("dashboard.noLinkYet")}</div>
           )}
@@ -56,4 +70,3 @@ export function StudentDashboard({
     </main>
   )
 }
-

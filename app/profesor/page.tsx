@@ -34,7 +34,9 @@ export default async function ProfesorPage() {
                   <div className="text-sm text-muted-foreground truncate">{s.email}</div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground hidden sm:inline">{s.driveEmbedUrl ? "Con link" : "Sin link"}</span>
+                  <span className="text-xs text-muted-foreground hidden sm:inline">
+                    PPT: {s.driveEmbedUrl ? "Con" : "Sin"} · Doc: {s.docEmbedUrl ? "Con" : "Sin"}
+                  </span>
                   <Button asChild variant="outline" size="sm">
                     <Link href={`/profesor/estudiante/${s.id}`}>Ver</Link>
                   </Button>

@@ -70,11 +70,12 @@ type TranslationKey =
   | "header.tasks"
   | "dashboard.studentPanel"
   | "dashboard.studentGreeting"
-  | "dashboard.presentationTitle"
-  | "dashboard.presentationDesc"
+  | "dashboard.linksTitle"
+  | "dashboard.linksDesc"
   | "dashboard.calendarTitle"
   | "dashboard.calendarDesc"
   | "dashboard.previewTitle"
+  | "dashboard.docPreviewTitle"
   | "dashboard.noLinkYet"
   | "drive.savedLink"
   | "drive.edit"
@@ -83,6 +84,21 @@ type TranslationKey =
   | "drive.saving"
   | "drive.saved"
   | "drive.placeholder"
+  | "doc.savedLink"
+  | "doc.edit"
+  | "doc.cancel"
+  | "doc.save"
+  | "doc.saving"
+  | "doc.saved"
+  | "doc.placeholder"
+  | "links.pptLabel"
+  | "links.docLabel"
+  | "links.pptPlaceholder"
+  | "links.docPlaceholder"
+  | "links.save"
+  | "links.saving"
+  | "links.saved"
+  | "links.reset"
   | "tasks.calendar"
   | "tasks.selectedDate"
   | "tasks.tasksFor"
@@ -172,12 +188,13 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
 
     "dashboard.studentPanel": "Espace etudiant",
     "dashboard.studentGreeting": "Bonjour, {name}. Ici vous pouvez coller le lien de votre presentation.",
-    "dashboard.presentationTitle": "Votre presentation (Google Drive)",
-    "dashboard.presentationDesc":
-      "Vous pouvez coller un lien Drive (drive.google.com) ou Google Slides (docs.google.com/presentation).",
+    "dashboard.linksTitle": "Liens (PPT et Doc)",
+    "dashboard.linksDesc":
+      "Collez vos liens : PPT (Drive/Slides) puis Doc (Google Docs). Vous pouvez aussi coller les deux d'un coup.",
     "dashboard.calendarTitle": "Calendrier et taches",
     "dashboard.calendarDesc": "Consultez ce que vous devez presenter a chaque reunion.",
     "dashboard.previewTitle": "Apercu",
+    "dashboard.docPreviewTitle": "Apercu du document",
     "dashboard.noLinkYet": "Vous n'avez pas encore ajoute de lien.",
 
     "drive.savedLink": "Lien enregistre",
@@ -188,6 +205,26 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "drive.saved": "Enregistre.",
     "drive.placeholder":
       "Drive: https://drive.google.com/file/d/.../preview | Slides: https://docs.google.com/presentation/d/.../edit",
+
+    "doc.savedLink": "Lien enregistre",
+    "doc.edit": "Modifier",
+    "doc.cancel": "Annuler",
+    "doc.save": "Enregistrer",
+    "doc.saving": "Enregistrement...",
+    "doc.saved": "Enregistre.",
+    "doc.placeholder":
+      "Docs: https://docs.google.com/document/d/.../edit | Drive: https://drive.google.com/file/d/.../preview",
+
+    "links.pptLabel": "PPT (Drive/Slides)",
+    "links.docLabel": "Doc (Google Docs)",
+    "links.pptPlaceholder":
+      "Collez l'URL du PPT... (Drive ou Slides)",
+    "links.docPlaceholder":
+      "Collez l'URL du Doc... (Google Docs ou fichier Drive)",
+    "links.save": "Enregistrer",
+    "links.saving": "Enregistrement...",
+    "links.saved": "Enregistre.",
+    "links.reset": "Reinitialiser",
 
     "tasks.calendar": "Calendrier",
     "tasks.selectedDate": "Date selectionnee",
@@ -276,12 +313,13 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
 
     "dashboard.studentPanel": "Panel de estudiante",
     "dashboard.studentGreeting": "Hola, {name}. Aquí puedes pegar el enlace de tu presentación.",
-    "dashboard.presentationTitle": "Tu presentación (Google Drive)",
-    "dashboard.presentationDesc":
-      "Puedes pegar un link de Drive (drive.google.com) o de Google Slides (docs.google.com/presentation).",
+    "dashboard.linksTitle": "Enlaces (PPT y Doc)",
+    "dashboard.linksDesc":
+      "Pega tus enlaces: primero el PPT (Drive/Slides) y luego el Doc (Google Docs). También puedes pegar ambos de una vez.",
     "dashboard.calendarTitle": "Calendario y tareas",
     "dashboard.calendarDesc": "Revisa lo que debes presentar en cada reunión.",
     "dashboard.previewTitle": "Vista previa",
+    "dashboard.docPreviewTitle": "Vista previa del documento",
     "dashboard.noLinkYet": "Aún no has agregado un enlace.",
 
     "drive.savedLink": "Enlace guardado",
@@ -292,6 +330,24 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "drive.saved": "Guardado.",
     "drive.placeholder":
       "Drive: https://drive.google.com/file/d/.../preview | Slides: https://docs.google.com/presentation/d/.../edit",
+
+    "doc.savedLink": "Enlace guardado",
+    "doc.edit": "Editar",
+    "doc.cancel": "Cancelar",
+    "doc.save": "Guardar",
+    "doc.saving": "Guardando...",
+    "doc.saved": "Guardado.",
+    "doc.placeholder":
+      "Docs: https://docs.google.com/document/d/.../edit | Drive: https://drive.google.com/file/d/.../preview",
+
+    "links.pptLabel": "PPT (Drive/Slides)",
+    "links.docLabel": "Doc (Google Docs)",
+    "links.pptPlaceholder": "Pega la URL del PPT... (Drive o Slides)",
+    "links.docPlaceholder": "Pega la URL del Doc... (Google Docs o archivo Drive)",
+    "links.save": "Guardar",
+    "links.saving": "Guardando...",
+    "links.saved": "Guardado.",
+    "links.reset": "Restablecer",
 
     "tasks.calendar": "Calendario",
     "tasks.selectedDate": "Fecha seleccionada",
@@ -381,12 +437,13 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
 
     "dashboard.studentPanel": "Student dashboard",
     "dashboard.studentGreeting": "Hi, {name}. Paste your presentation link here.",
-    "dashboard.presentationTitle": "Your presentation (Google Drive)",
-    "dashboard.presentationDesc":
-      "You can paste a Drive link (drive.google.com) or Google Slides link (docs.google.com/presentation).",
+    "dashboard.linksTitle": "Links (PPT and Doc)",
+    "dashboard.linksDesc":
+      "Paste your links: PPT first (Drive/Slides) then Doc (Google Docs). You can also paste both at once.",
     "dashboard.calendarTitle": "Calendar and tasks",
     "dashboard.calendarDesc": "Check what you should present each meeting.",
     "dashboard.previewTitle": "Preview",
+    "dashboard.docPreviewTitle": "Document preview",
     "dashboard.noLinkYet": "You have not added a link yet.",
 
     "drive.savedLink": "Saved link",
@@ -397,6 +454,24 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "drive.saved": "Saved.",
     "drive.placeholder":
       "Drive: https://drive.google.com/file/d/.../preview | Slides: https://docs.google.com/presentation/d/.../edit",
+
+    "doc.savedLink": "Saved link",
+    "doc.edit": "Edit",
+    "doc.cancel": "Cancel",
+    "doc.save": "Save",
+    "doc.saving": "Saving...",
+    "doc.saved": "Saved.",
+    "doc.placeholder":
+      "Docs: https://docs.google.com/document/d/.../edit | Drive: https://drive.google.com/file/d/.../preview",
+
+    "links.pptLabel": "PPT (Drive/Slides)",
+    "links.docLabel": "Doc (Google Docs)",
+    "links.pptPlaceholder": "Paste the PPT URL... (Drive or Slides)",
+    "links.docPlaceholder": "Paste the Doc URL... (Google Docs or Drive file)",
+    "links.save": "Save",
+    "links.saving": "Saving...",
+    "links.saved": "Saved.",
+    "links.reset": "Reset",
 
     "tasks.calendar": "Calendar",
     "tasks.selectedDate": "Selected date",

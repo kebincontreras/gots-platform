@@ -13,6 +13,7 @@ export type User = {
   passwordHash: string
   role: Role
   driveEmbedUrl: string | null
+  docEmbedUrl: string | null
   createdAt: string
   updatedAt: string
 }
@@ -67,10 +68,13 @@ async function ensurePgSchema() {
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'STUDENT',
       drive_embed_url TEXT,
+      doc_embed_url TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
   `
+
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS doc_embed_url TEXT;`
 
   await sql`
     CREATE TABLE IF NOT EXISTS tasks (
@@ -107,6 +111,7 @@ function getSqliteDb() {
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'STUDENT',
       drive_embed_url TEXT,
+      doc_embed_url TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -121,6 +126,13 @@ function getSqliteDb() {
     );
     CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(date);
   `)
+
+  // Lightweight migration for existing SQLite DBs
+  const userCols = db.prepare(`PRAGMA table_info(users)`).all() as Array<{ name: string }>
+  const hasDocEmbed = userCols.some((c) => c.name === "doc_embed_url")
+  if (!hasDocEmbed) {
+    db.exec(`ALTER TABLE users ADD COLUMN doc_embed_url TEXT;`)
+  }
 
   sqliteSingleton = db
   return db
@@ -148,10 +160,11 @@ export async function getUserByEmail(email: string): Promise<User | null> {
         password_hash: string
         role: Role
         drive_embed_url: string | null
+        doc_embed_url: string | null
         created_at: string
         updated_at: string
       }>
-    >`SELECT id, email, name, password_hash, role, drive_embed_url, created_at, updated_at
+    >`SELECT id, email, name, password_hash, role, drive_embed_url, doc_embed_url, created_at, updated_at
       FROM users WHERE email = ${email} LIMIT 1`
 
     const row = rows[0]
@@ -163,6 +176,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
       passwordHash: row.password_hash,
       role: row.role,
       driveEmbedUrl: row.drive_embed_url ?? null,
+      docEmbedUrl: row.doc_embed_url ?? null,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }
@@ -171,7 +185,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
   const db = getSqliteDb()
   const row = db
     .prepare(
-      `SELECT id, email, name, password_hash, role, drive_embed_url, created_at, updated_at
+      `SELECT id, email, name, password_hash, role, drive_embed_url, doc_embed_url, created_at, updated_at
        FROM users WHERE email = ? LIMIT 1`,
     )
     .get(email) as any
@@ -183,6 +197,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     passwordHash: row.password_hash,
     role: row.role,
     driveEmbedUrl: row.drive_embed_url ?? null,
+    docEmbedUrl: row.doc_embed_url ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -202,10 +217,11 @@ export async function getUserById(id: string): Promise<User | null> {
         password_hash: string
         role: Role
         drive_embed_url: string | null
+        doc_embed_url: string | null
         created_at: string
         updated_at: string
       }>
-    >`SELECT id, email, name, password_hash, role, drive_embed_url, created_at, updated_at
+    >`SELECT id, email, name, password_hash, role, drive_embed_url, doc_embed_url, created_at, updated_at
       FROM users WHERE id = ${id} LIMIT 1`
 
     const row = rows[0]
@@ -217,6 +233,7 @@ export async function getUserById(id: string): Promise<User | null> {
       passwordHash: row.password_hash,
       role: row.role,
       driveEmbedUrl: row.drive_embed_url ?? null,
+      docEmbedUrl: row.doc_embed_url ?? null,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }
@@ -225,7 +242,7 @@ export async function getUserById(id: string): Promise<User | null> {
   const db = getSqliteDb()
   const row = db
     .prepare(
-      `SELECT id, email, name, password_hash, role, drive_embed_url, created_at, updated_at
+      `SELECT id, email, name, password_hash, role, drive_embed_url, doc_embed_url, created_at, updated_at
        FROM users WHERE id = ? LIMIT 1`,
     )
     .get(id) as any
@@ -237,6 +254,7 @@ export async function getUserById(id: string): Promise<User | null> {
     passwordHash: row.password_hash,
     role: row.role,
     driveEmbedUrl: row.drive_embed_url ?? null,
+    docEmbedUrl: row.doc_embed_url ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -272,6 +290,7 @@ export async function createUser(input: { name: string; email: string; passwordH
     passwordHash: input.passwordHash,
     role,
     driveEmbedUrl: null,
+    docEmbedUrl: null,
     createdAt,
     updatedAt,
   }
@@ -291,15 +310,38 @@ export async function updateUserDriveEmbedUrl(userId: string, driveEmbedUrl: str
   db.prepare(`UPDATE users SET drive_embed_url = ?, updated_at = ? WHERE id = ?`).run(driveEmbedUrl, updatedAt, userId)
 }
 
-export async function listStudents(): Promise<Array<Pick<User, "id" | "name" | "email" | "driveEmbedUrl" | "updatedAt">>> {
+export async function updateUserDocEmbedUrl(userId: string, docEmbedUrl: string): Promise<void> {
+  const updatedAt = nowIso()
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    await sql`UPDATE users SET doc_embed_url = ${docEmbedUrl}, updated_at = ${updatedAt} WHERE id = ${userId}`
+    return
+  }
+
+  const db = getSqliteDb()
+  db.prepare(`UPDATE users SET doc_embed_url = ?, updated_at = ? WHERE id = ?`).run(docEmbedUrl, updatedAt, userId)
+}
+
+export async function listStudents(): Promise<
+  Array<Pick<User, "id" | "name" | "email" | "driveEmbedUrl" | "docEmbedUrl" | "updatedAt">>
+> {
   if (shouldUsePostgres()) {
     const sql = getPgSql()
     if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
     await ensurePgSchema()
 
     const rows = await sql<
-      Array<{ id: string; name: string; email: string; drive_embed_url: string | null; updated_at: string }>
-    >`SELECT id, name, email, drive_embed_url, updated_at
+      Array<{
+        id: string
+        name: string
+        email: string
+        drive_embed_url: string | null
+        doc_embed_url: string | null
+        updated_at: string
+      }>
+    >`SELECT id, name, email, drive_embed_url, doc_embed_url, updated_at
       FROM users WHERE role = 'STUDENT' ORDER BY name ASC`
 
     return rows.map((r) => ({
@@ -307,6 +349,7 @@ export async function listStudents(): Promise<Array<Pick<User, "id" | "name" | "
       name: r.name,
       email: r.email,
       driveEmbedUrl: r.drive_embed_url ?? null,
+      docEmbedUrl: r.doc_embed_url ?? null,
       updatedAt: r.updated_at,
     }))
   }
@@ -314,7 +357,7 @@ export async function listStudents(): Promise<Array<Pick<User, "id" | "name" | "
   const db = getSqliteDb()
   const rows = db
     .prepare(
-      `SELECT id, name, email, drive_embed_url, updated_at
+      `SELECT id, name, email, drive_embed_url, doc_embed_url, updated_at
        FROM users WHERE role = 'STUDENT' ORDER BY name ASC`,
     )
     .all() as any[]
@@ -323,6 +366,7 @@ export async function listStudents(): Promise<Array<Pick<User, "id" | "name" | "
     name: r.name,
     email: r.email,
     driveEmbedUrl: r.drive_embed_url ?? null,
+    docEmbedUrl: r.doc_embed_url ?? null,
     updatedAt: r.updated_at,
   }))
 }

@@ -14,5 +14,5 @@ export default async function DashboardPage() {
 
   if (user.role === "PROFESSOR") redirect("/profesor")
 
-  return <StudentDashboard name={user.name} driveEmbedUrl={user.driveEmbedUrl} />
+  return <StudentDashboard name={user.name} driveEmbedUrl={user.driveEmbedUrl} docEmbedUrl={user.docEmbedUrl} />
 }
