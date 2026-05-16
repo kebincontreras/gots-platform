@@ -5,6 +5,28 @@ import { createPublication, listPublications } from "@/lib/store"
 import fs from "node:fs"
 import path from "node:path"
 
+function normalizeDriveDownloadUrl(raw: string): string {
+  const trimmed = raw.trim()
+  if (!trimmed) return trimmed
+  let url: URL
+  try {
+    url = new URL(trimmed)
+  } catch {
+    return trimmed
+  }
+
+  const host = url.hostname.toLowerCase()
+  const pathname = url.pathname
+
+  if (host.includes("drive.google.com")) {
+    const m = pathname.match(/\/file\/d\/([^/]+)\//)
+    const id = m?.[1] ?? url.searchParams.get("id")
+    if (id) return `https://drive.google.com/uc?export=download&id=${id}`
+  }
+
+  return trimmed
+}
+
 function readStaticPublicationsFallback() {
   const filePath = path.join(process.cwd(), "public", "publications.json")
   const raw = fs.readFileSync(filePath, "utf8")
@@ -34,7 +56,7 @@ export async function POST(req: Request) {
   const conference = (body?.conference ?? "").toString().trim() || null
   const year = Number(body?.year)
   const image = (body?.image ?? "").toString().trim() || null
-  const pdfUrl = (body?.pdfUrl ?? "").toString().trim()
+  const pdfUrl = normalizeDriveDownloadUrl((body?.pdfUrl ?? "").toString())
   const externalUrl = (body?.externalUrl ?? "").toString().trim()
   const supplementaryMaterial = (body?.supplementaryMaterial ?? "").toString().trim() || null
   const starred = Boolean(body?.starred)
@@ -68,4 +90,3 @@ export async function POST(req: Request) {
     )
   }
 }
-

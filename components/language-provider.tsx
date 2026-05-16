@@ -70,6 +70,7 @@ type TranslationKey =
   | "header.tasks"
   | "header.newsEditor"
   | "header.publicationsEditor"
+  | "header.edit"
   | "dashboard.studentPanel"
   | "dashboard.studentGreeting"
   | "dashboard.linksTitle"
@@ -189,6 +190,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "header.tasks": "Taches",
     "header.newsEditor": "Nouvelles",
     "header.publicationsEditor": "Publications",
+    "header.edit": "Editer",
 
     "dashboard.studentPanel": "Espace etudiant",
     "dashboard.studentGreeting": "Bonjour, {name}. Ici vous pouvez coller le lien de votre presentation.",
@@ -316,6 +318,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "header.tasks": "Tareas",
     "header.newsEditor": "Editar noticias",
     "header.publicationsEditor": "Editar publicaciones",
+    "header.edit": "Editar",
 
     "dashboard.studentPanel": "Panel de estudiante",
     "dashboard.studentGreeting": "Hola, {name}. Aquí puedes pegar el enlace de tu presentación.",
@@ -442,6 +445,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "header.tasks": "Tasks",
     "header.newsEditor": "Edit news",
     "header.publicationsEditor": "Edit publications",
+    "header.edit": "Edit",
 
     "dashboard.studentPanel": "Student dashboard",
     "dashboard.studentGreeting": "Hi, {name}. Paste your presentation link here.",
@@ -511,10 +515,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>("es")
 
   useEffect(() => {
-    const savedLanguage = window.localStorage.getItem(STORAGE_KEY) as Language | null
-    if (savedLanguage === "fr" || savedLanguage === "es" || savedLanguage === "en") {
-      setLanguage(savedLanguage)
-    }
+    // Force Spanish as default on every load.
+    setLanguage("es")
   }, [])
 
   useEffect(() => {

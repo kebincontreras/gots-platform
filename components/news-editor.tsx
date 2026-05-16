@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { getImagePath } from "@/lib/utils"
 
 type NewsItem = {
   id: number
@@ -67,6 +68,22 @@ export function NewsEditor() {
   useEffect(() => {
     refresh()
   }, [])
+
+  const onPickImage = async (file: File | null) => {
+    if (!file) return
+    const maxBytes = 2 * 1024 * 1024
+    if (file.size > maxBytes) {
+      setError("La imagen es muy grande (máx 2MB).")
+      return
+    }
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result))
+      reader.onerror = () => reject(new Error("No se pudo leer la imagen"))
+      reader.readAsDataURL(file)
+    })
+    setImage(dataUrl)
+  }
 
   const onCreate = async () => {
     setSaving(true)
@@ -161,6 +178,18 @@ export function NewsEditor() {
               <Input value={author} onChange={(e) => setAuthor(e.target.value)} />
             </div>
           </div>
+          <div className="grid gap-2">
+            <div className="text-sm font-medium">Subir imagen</div>
+            <Input type="file" accept="image/*" onChange={(e) => onPickImage(e.target.files?.[0] ?? null)} />
+            {image ? (
+              <div className="rounded-lg border overflow-hidden max-w-xl">
+                <img src={getImagePath(image)} alt="Preview" className="w-full h-auto" />
+              </div>
+            ) : null}
+            <div className="text-xs text-muted-foreground">
+              Recomendado: usar ruta en <code>/public/Noticias</code>. Si subes aquí, se guarda como imagen embebida (puede ser más pesado).
+            </div>
+          </div>
           <div className="grid gap-1 sm:grid-cols-2 sm:gap-3">
             <div className="grid gap-1">
               <div className="text-sm font-medium">Tags (separados por coma)</div>
@@ -225,4 +254,3 @@ export function NewsEditor() {
     </div>
   )
 }
-

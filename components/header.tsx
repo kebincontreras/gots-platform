@@ -105,22 +105,12 @@ export function Header() {
                 </a>
                 {session.user ? (
                   <a
-                    href="/noticias/editor"
+                    href="/editar"
                     className={`text-sm font-sans font-medium transition-colors ${
                       isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
                     }`}
                   >
-                    {t("header.newsEditor")}
-                  </a>
-                ) : null}
-                {session.user ? (
-                  <a
-                    href="/publicaciones/editor"
-                    className={`text-sm font-sans font-medium transition-colors ${
-                      isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
-                    }`}
-                  >
-                    {t("header.publicationsEditor")}
+                    {t("header.edit")}
                   </a>
                 ) : null}
                 {(session.user as any).role === "PROFESSOR" ? (
@@ -214,20 +204,11 @@ export function Header() {
                 </a>
                 {session.user ? (
                   <a
-                    href="/noticias/editor"
+                    href="/editar"
                     className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    {t("header.newsEditor")}
-                  </a>
-                ) : null}
-                {session.user ? (
-                  <a
-                    href="/publicaciones/editor"
-                    className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {t("header.publicationsEditor")}
+                    {t("header.edit")}
                   </a>
                 ) : null}
                 {(session.user as any).role === "PROFESSOR" ? (
