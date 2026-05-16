@@ -31,10 +31,19 @@ export function PublicationsSection() {
   useEffect(() => {
     const loadPublications = async () => {
       try {
-        const response = await fetch(getImagePath('/publications.json'))
-        const data = await response.json()
+        let data: any = null
+        try {
+          const res = await fetch("/api/publications")
+          if (res.ok) data = await res.json()
+        } catch {
+          // ignore
+        }
+        if (!data) {
+          const response = await fetch(getImagePath("/publications.json"))
+          data = await response.json()
+        }
         // Filtrar solo las publicaciones destacadas
-        const starred = data.publications.filter((pub: Publication) => pub.starred)
+        const starred = (data.publications ?? []).filter((pub: Publication) => pub.starred)
         setStarredPublications(starred)
       } catch (error) {
         console.error('Error loading publications:', error)

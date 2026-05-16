@@ -13,7 +13,7 @@ interface Publication {
   journal: string;
   conference: string | null;
   year: number;
-  image: string;
+  image: string | null;
   pdfUrl: string;
   externalUrl: string;
   supplementaryMaterial: string | null;
@@ -24,16 +24,24 @@ interface Publication {
 
 async function getPublication(id: string): Promise<Publication | null> {
   try {
-    // Import the JSON data directly for build time
-    const fs = await import('fs');
-    const path = await import('path');
-    
-    const filePath = path.join(process.cwd(), 'public', 'publications.json');
-    const fileContents = fs.readFileSync(filePath, 'utf8');
-    const data = JSON.parse(fileContents);
-    const publications: Publication[] = data.publications || [];
-    
-    return publications.find(pub => pub.id.toString() === id) || null;
+    try {
+      const { listPublications } = await import("@/lib/store")
+      const items = await listPublications()
+      const found = items.find((p: any) => String(p.id) === id)
+      if (found) return found as any
+    } catch {
+      // ignore and fall back to JSON file
+    }
+
+    const fs = await import("fs")
+    const path = await import("path")
+
+    const filePath = path.join(process.cwd(), "public", "publications.json")
+    const fileContents = fs.readFileSync(filePath, "utf8")
+    const data = JSON.parse(fileContents)
+    const publications: Publication[] = data.publications || []
+
+    return publications.find((pub) => pub.id.toString() === id) || null
   } catch (error) {
     console.error('Error fetching publication:', error);
     return null;
@@ -110,7 +118,7 @@ export default async function PublicationDetailPage({
             <Card className="mb-6">
               <CardContent className="p-4">
                 <img
-                  src={getImagePath(publication.image)}
+                  src={publication.image ? getImagePath(publication.image) : getImagePath("/placeholder.svg")}
                   alt={publication.title}
                   className="w-full h-auto rounded-lg mb-4"
                 />

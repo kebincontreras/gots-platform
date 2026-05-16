@@ -89,8 +89,17 @@ export default function PublicationsPage() {
   useEffect(() => {
     const loadPublications = async () => {
       try {
-        const response = await fetch(getImagePath('/publications.json'))
-        const data = await response.json()
+        let data: any = null
+        try {
+          const res = await fetch("/api/publications")
+          if (res.ok) data = await res.json()
+        } catch {
+          // ignore
+        }
+        if (!data) {
+          const response = await fetch(getImagePath("/publications.json"))
+          data = await response.json()
+        }
         setPublications(data.publications)
         setFilteredPublications(data.publications)
       } catch (error) {

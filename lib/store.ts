@@ -44,6 +44,25 @@ export type NewsItem = {
   updatedAt: string
 }
 
+export type Publication = {
+  id: number
+  title: string
+  authors: string
+  journal: string
+  conference: string | null
+  year: number
+  image: string | null
+  pdfUrl: string
+  externalUrl: string
+  supplementaryMaterial: string | null
+  starred: boolean
+  abstract: string
+  keywords: string[]
+  createdBy: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 function nowIso() {
   return new Date().toISOString()
 }
@@ -123,8 +142,30 @@ async function ensurePgSchema() {
     );
   `
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS publications (
+      id INTEGER PRIMARY KEY,
+      title TEXT NOT NULL,
+      authors TEXT NOT NULL,
+      journal TEXT NOT NULL,
+      conference TEXT,
+      year INTEGER NOT NULL,
+      image TEXT,
+      pdf_url TEXT NOT NULL,
+      external_url TEXT NOT NULL,
+      supplementary_material TEXT,
+      starred BOOLEAN NOT NULL DEFAULT FALSE,
+      abstract TEXT NOT NULL,
+      keywords TEXT NOT NULL,
+      created_by TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+  `
+
   await sql`CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(date);`
   await sql`CREATE INDEX IF NOT EXISTS idx_news_date ON news(date);`
+  await sql`CREATE INDEX IF NOT EXISTS idx_publications_year ON publications(year);`
 
   pgInitialized = true
 }
@@ -180,6 +221,26 @@ function getSqliteDb() {
       updated_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_news_date ON news(date);
+
+    CREATE TABLE IF NOT EXISTS publications (
+      id INTEGER PRIMARY KEY,
+      title TEXT NOT NULL,
+      authors TEXT NOT NULL,
+      journal TEXT NOT NULL,
+      conference TEXT,
+      year INTEGER NOT NULL,
+      image TEXT,
+      pdf_url TEXT NOT NULL,
+      external_url TEXT NOT NULL,
+      supplementary_material TEXT,
+      starred INTEGER NOT NULL DEFAULT 0,
+      abstract TEXT NOT NULL,
+      keywords TEXT NOT NULL,
+      created_by TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_publications_year ON publications(year);
   `)
 
   // Lightweight migration for existing SQLite DBs
@@ -565,6 +626,171 @@ export async function deleteNews(id: number): Promise<void> {
   }
   const db = getSqliteDb()
   db.prepare(`DELETE FROM news WHERE id = ?`).run(id)
+}
+
+function parseKeywords(value: string): string[] {
+  try {
+    const parsed = JSON.parse(value)
+    if (Array.isArray(parsed)) return parsed.map((t) => String(t)).filter(Boolean)
+  } catch {
+    // ignore
+  }
+  return value
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean)
+}
+
+function stringifyKeywords(keywords: string[]) {
+  return JSON.stringify(keywords ?? [])
+}
+
+export async function listPublications(): Promise<Publication[]> {
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    const rows = (await sql`SELECT id, title, authors, journal, conference, year, image, pdf_url, external_url, supplementary_material, starred, abstract, keywords, created_by, created_at, updated_at
+      FROM publications ORDER BY year DESC, starred DESC, id DESC`) as any[]
+    return rows.map((r) => ({
+      id: Number(r.id),
+      title: r.title,
+      authors: r.authors,
+      journal: r.journal,
+      conference: r.conference ?? null,
+      year: Number(r.year),
+      image: r.image ?? null,
+      pdfUrl: r.pdf_url,
+      externalUrl: r.external_url,
+      supplementaryMaterial: r.supplementary_material ?? null,
+      starred: Boolean(r.starred),
+      abstract: r.abstract,
+      keywords: parseKeywords(r.keywords ?? "[]"),
+      createdBy: r.created_by ?? null,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }))
+  }
+
+  const db = getSqliteDb()
+  const rows = db
+    .prepare(
+      `SELECT id, title, authors, journal, conference, year, image, pdf_url, external_url, supplementary_material, starred, abstract, keywords, created_by, created_at, updated_at
+       FROM publications ORDER BY year DESC, starred DESC, id DESC`,
+    )
+    .all() as any[]
+  return rows.map((r) => ({
+    id: Number(r.id),
+    title: r.title,
+    authors: r.authors,
+    journal: r.journal,
+    conference: r.conference ?? null,
+    year: Number(r.year),
+    image: r.image ?? null,
+    pdfUrl: r.pdf_url,
+    externalUrl: r.external_url,
+    supplementaryMaterial: r.supplementary_material ?? null,
+    starred: Boolean(r.starred),
+    abstract: r.abstract,
+    keywords: parseKeywords(r.keywords ?? "[]"),
+    createdBy: r.created_by ?? null,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }))
+}
+
+export async function createPublication(
+  userId: string | null,
+  input: Omit<Publication, "id" | "createdAt" | "updatedAt" | "createdBy">,
+): Promise<Publication> {
+  const createdAt = nowIso()
+  const updatedAt = createdAt
+  const keywords = stringifyKeywords(input.keywords || [])
+
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    const rows = (await sql`INSERT INTO publications (title, authors, journal, conference, year, image, pdf_url, external_url, supplementary_material, starred, abstract, keywords, created_by, created_at, updated_at)
+      VALUES (${input.title}, ${input.authors}, ${input.journal}, ${input.conference}, ${input.year}, ${input.image}, ${input.pdfUrl}, ${input.externalUrl}, ${input.supplementaryMaterial}, ${input.starred}, ${input.abstract}, ${keywords}, ${userId}, ${createdAt}, ${updatedAt})
+      RETURNING id, title, authors, journal, conference, year, image, pdf_url, external_url, supplementary_material, starred, abstract, keywords, created_by, created_at, updated_at`) as any[]
+    const r = rows[0]
+    return {
+      id: Number(r.id),
+      title: r.title,
+      authors: r.authors,
+      journal: r.journal,
+      conference: r.conference ?? null,
+      year: Number(r.year),
+      image: r.image ?? null,
+      pdfUrl: r.pdf_url,
+      externalUrl: r.external_url,
+      supplementaryMaterial: r.supplementary_material ?? null,
+      starred: Boolean(r.starred),
+      abstract: r.abstract,
+      keywords: parseKeywords(r.keywords ?? "[]"),
+      createdBy: r.created_by ?? null,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }
+  }
+
+  const db = getSqliteDb()
+  const info = db
+    .prepare(
+      `INSERT INTO publications (title, authors, journal, conference, year, image, pdf_url, external_url, supplementary_material, starred, abstract, keywords, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(
+      input.title,
+      input.authors,
+      input.journal,
+      input.conference ?? null,
+      input.year,
+      input.image ?? null,
+      input.pdfUrl,
+      input.externalUrl,
+      input.supplementaryMaterial ?? null,
+      input.starred ? 1 : 0,
+      input.abstract,
+      keywords,
+      userId,
+      createdAt,
+      updatedAt,
+    )
+  const id = Number(info.lastInsertRowid)
+  return {
+    id,
+    ...input,
+    createdBy: userId,
+    createdAt,
+    updatedAt,
+  }
+}
+
+export async function getPublicationOwner(id: number): Promise<string | null> {
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    const rows = (await sql`SELECT created_by FROM publications WHERE id = ${id} LIMIT 1`) as any[]
+    return rows?.[0]?.created_by ?? null
+  }
+  const db = getSqliteDb()
+  const row = db.prepare(`SELECT created_by FROM publications WHERE id = ? LIMIT 1`).get(id) as any
+  return row?.created_by ?? null
+}
+
+export async function deletePublication(id: number): Promise<void> {
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    await sql`DELETE FROM publications WHERE id = ${id}`
+    return
+  }
+  const db = getSqliteDb()
+  db.prepare(`DELETE FROM publications WHERE id = ?`).run(id)
 }
 
 export async function updateUserRoleByEmail(email: string, role: Role): Promise<void> {

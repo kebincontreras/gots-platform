@@ -5,8 +5,8 @@ import { createNews, listNews } from "@/lib/store"
 import fs from "node:fs"
 import path from "node:path"
 
-function canEditNews(role?: string) {
-  return role === "PROFESSOR" || role === "EDITOR_NOTICIAS"
+function canEditNews(isLoggedIn: boolean) {
+  return isLoggedIn
 }
 
 function readStaticNewsFallback() {
@@ -29,9 +29,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
-  const role = (session?.user as any)?.role as string | undefined
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  if (!canEditNews(role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  if (!canEditNews(true)) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const body = await req.json().catch(() => null)
   const title = (body?.title ?? "").toString().trim()
@@ -73,4 +72,3 @@ export async function POST(req: Request) {
     )
   }
 }
-

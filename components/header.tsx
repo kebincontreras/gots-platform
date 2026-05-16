@@ -103,7 +103,7 @@ export function Header() {
                 >
                   {(session.user as any).role === "PROFESSOR" ? t("header.students") : t("header.panel")}
                 </a>
-                {(session.user as any).role === "PROFESSOR" || (session.user as any).role === "EDITOR_NOTICIAS" ? (
+                {session.user ? (
                   <a
                     href="/noticias/editor"
                     className={`text-sm font-sans font-medium transition-colors ${
@@ -111,6 +111,16 @@ export function Header() {
                     }`}
                   >
                     {t("header.newsEditor")}
+                  </a>
+                ) : null}
+                {session.user ? (
+                  <a
+                    href="/publicaciones/editor"
+                    className={`text-sm font-sans font-medium transition-colors ${
+                      isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
+                    }`}
+                  >
+                    {t("header.publicationsEditor")}
                   </a>
                 ) : null}
                 {(session.user as any).role === "PROFESSOR" ? (
@@ -202,13 +212,22 @@ export function Header() {
                 >
                   {(session.user as any).role === "PROFESSOR" ? t("header.students") : t("header.panel")}
                 </a>
-                {(session.user as any).role === "PROFESSOR" || (session.user as any).role === "EDITOR_NOTICIAS" ? (
+                {session.user ? (
                   <a
                     href="/noticias/editor"
                     className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     {t("header.newsEditor")}
+                  </a>
+                ) : null}
+                {session.user ? (
+                  <a
+                    href="/publicaciones/editor"
+                    className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {t("header.publicationsEditor")}
                   </a>
                 ) : null}
                 {(session.user as any).role === "PROFESSOR" ? (
