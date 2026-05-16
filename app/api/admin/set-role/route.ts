@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { updateUserRoleByEmail, type Role } from "@/lib/store"
 
 function isRole(value: unknown): value is Role {
-  return value === "STUDENT" || value === "PROFESSOR"
+  return value === "STUDENT" || value === "PROFESSOR" || value === "EDITOR_NOTICIAS"
 }
 
 export async function POST(req: Request) {
@@ -23,4 +23,3 @@ export async function POST(req: Request) {
   await updateUserRoleByEmail(email, targetRole)
   return NextResponse.json({ ok: true })
 }
-

@@ -68,6 +68,7 @@ type TranslationKey =
   | "header.panel"
   | "header.students"
   | "header.tasks"
+  | "header.newsEditor"
   | "dashboard.studentPanel"
   | "dashboard.studentGreeting"
   | "dashboard.linksTitle"
@@ -185,6 +186,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "header.panel": "Panel",
     "header.students": "Estudiantes",
     "header.tasks": "Taches",
+    "header.newsEditor": "Nouvelles",
 
     "dashboard.studentPanel": "Espace etudiant",
     "dashboard.studentGreeting": "Bonjour, {name}. Ici vous pouvez coller le lien de votre presentation.",
@@ -310,6 +312,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "header.panel": "Panel",
     "header.students": "Estudiantes",
     "header.tasks": "Tareas",
+    "header.newsEditor": "Editar noticias",
 
     "dashboard.studentPanel": "Panel de estudiante",
     "dashboard.studentGreeting": "Hola, {name}. Aquí puedes pegar el enlace de tu presentación.",
@@ -434,6 +437,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "header.panel": "Dashboard",
     "header.students": "Students",
     "header.tasks": "Tasks",
+    "header.newsEditor": "Edit news",
 
     "dashboard.studentPanel": "Student dashboard",
     "dashboard.studentGreeting": "Hi, {name}. Paste your presentation link here.",

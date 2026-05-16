@@ -15,13 +15,14 @@ interface NewsItem {
   description: string
   summary: string
   date: string
-  dateFormatted: string
+  dateFormatted?: string
   image: string
   featured: boolean
   category: string
   tags: string[]
   author: string
   readTime: string
+  content?: string | null
 }
 
 export function NewsSection() {
@@ -41,10 +42,19 @@ export function NewsSection() {
   useEffect(() => {
     const loadNews = async () => {
       try {
-  const response = await fetch(getImagePath('/Noticias/news.json'))
-        const data = await response.json()
+        let data: any = null
+        try {
+          const res = await fetch("/api/news")
+          if (res.ok) data = await res.json()
+        } catch {
+          // ignore
+        }
+        if (!data) {
+          const response = await fetch(getImagePath("/Noticias/news.json"))
+          data = await response.json()
+        }
         // Filtrar solo las noticias destacadas y tomar las 3 más recientes
-        const featured = data.news
+        const featured = (data.news ?? [])
           .filter((item: NewsItem) => item.featured)
           .sort((a: NewsItem, b: NewsItem) => new Date(b.date).getTime() - new Date(a.date).getTime())
           .slice(0, 3)

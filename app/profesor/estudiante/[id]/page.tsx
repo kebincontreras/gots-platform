@@ -15,7 +15,7 @@ export default async function EstudiantePage({ params }: { params: Promise<{ id:
   if (role !== "PROFESSOR") redirect("/dashboard")
 
   const student = await getUserById(id)
-  if (!student || student.role !== "STUDENT") redirect("/profesor")
+  if (!student || (student.role !== "STUDENT" && student.role !== "EDITOR_NOTICIAS")) redirect("/profesor")
 
   return (
     <main className="min-h-screen">

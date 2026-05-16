@@ -4,7 +4,7 @@ import path from "node:path"
 import crypto from "node:crypto"
 import { neon } from "@neondatabase/serverless"
 
-export type Role = "STUDENT" | "PROFESSOR"
+export type Role = "STUDENT" | "PROFESSOR" | "EDITOR_NOTICIAS"
 
 export type User = {
   id: string
@@ -25,6 +25,23 @@ export type Task = {
   description: string | null
   createdBy: string
   createdAt: string
+}
+
+export type NewsItem = {
+  id: number
+  title: string
+  description: string
+  summary: string
+  date: string // YYYY-MM-DD
+  image: string
+  featured: boolean
+  category: string
+  tags: string[]
+  author: string
+  readTime: string
+  content: string | null
+  createdAt: string
+  updatedAt: string
 }
 
 function nowIso() {
@@ -87,7 +104,27 @@ async function ensurePgSchema() {
     );
   `
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS news (
+      id INTEGER PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      date TEXT NOT NULL,
+      image TEXT NOT NULL,
+      featured BOOLEAN NOT NULL DEFAULT FALSE,
+      category TEXT NOT NULL,
+      tags TEXT NOT NULL,
+      author TEXT NOT NULL,
+      read_time TEXT NOT NULL,
+      content TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+  `
+
   await sql`CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(date);`
+  await sql`CREATE INDEX IF NOT EXISTS idx_news_date ON news(date);`
 
   pgInitialized = true
 }
@@ -125,6 +162,24 @@ function getSqliteDb() {
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(date);
+
+    CREATE TABLE IF NOT EXISTS news (
+      id INTEGER PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      date TEXT NOT NULL,
+      image TEXT NOT NULL,
+      featured INTEGER NOT NULL DEFAULT 0,
+      category TEXT NOT NULL,
+      tags TEXT NOT NULL,
+      author TEXT NOT NULL,
+      read_time TEXT NOT NULL,
+      content TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_news_date ON news(date);
   `)
 
   // Lightweight migration for existing SQLite DBs
@@ -342,7 +397,7 @@ export async function listStudents(): Promise<
         updated_at: string
       }>
     >`SELECT id, name, email, drive_embed_url, doc_embed_url, updated_at
-      FROM users WHERE role = 'STUDENT' ORDER BY name ASC`
+      FROM users WHERE role IN ('STUDENT', 'EDITOR_NOTICIAS') ORDER BY name ASC`
 
     return rows.map((r) => ({
       id: r.id,
@@ -358,7 +413,7 @@ export async function listStudents(): Promise<
   const rows = db
     .prepare(
       `SELECT id, name, email, drive_embed_url, doc_embed_url, updated_at
-       FROM users WHERE role = 'STUDENT' ORDER BY name ASC`,
+       FROM users WHERE role IN ('STUDENT','EDITOR_NOTICIAS') ORDER BY name ASC`,
     )
     .all() as any[]
   return rows.map((r) => ({
@@ -369,6 +424,147 @@ export async function listStudents(): Promise<
     docEmbedUrl: r.doc_embed_url ?? null,
     updatedAt: r.updated_at,
   }))
+}
+
+function parseTags(value: string): string[] {
+  try {
+    const parsed = JSON.parse(value)
+    if (Array.isArray(parsed)) return parsed.map((t) => String(t)).filter(Boolean)
+  } catch {
+    // ignore
+  }
+  return value
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean)
+}
+
+function stringifyTags(tags: string[]) {
+  return JSON.stringify(tags ?? [])
+}
+
+export async function listNews(): Promise<NewsItem[]> {
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    const rows = (await sql`SELECT id, title, description, summary, date, image, featured, category, tags, author, read_time, content, created_at, updated_at
+      FROM news ORDER BY date DESC, featured DESC, id DESC`) as any[]
+    return rows.map((r) => ({
+      id: Number(r.id),
+      title: r.title,
+      description: r.description,
+      summary: r.summary,
+      date: r.date,
+      image: r.image,
+      featured: Boolean(r.featured),
+      category: r.category,
+      tags: parseTags(r.tags ?? "[]"),
+      author: r.author,
+      readTime: r.read_time,
+      content: r.content ?? null,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }))
+  }
+
+  const db = getSqliteDb()
+  const rows = db
+    .prepare(
+      `SELECT id, title, description, summary, date, image, featured, category, tags, author, read_time, content, created_at, updated_at
+       FROM news ORDER BY date DESC, featured DESC, id DESC`,
+    )
+    .all() as any[]
+  return rows.map((r) => ({
+    id: Number(r.id),
+    title: r.title,
+    description: r.description,
+    summary: r.summary,
+    date: r.date,
+    image: r.image,
+    featured: Boolean(r.featured),
+    category: r.category,
+    tags: parseTags(r.tags ?? "[]"),
+    author: r.author,
+    readTime: r.read_time,
+    content: r.content ?? null,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }))
+}
+
+export async function createNews(input: Omit<NewsItem, "id" | "createdAt" | "updatedAt">): Promise<NewsItem> {
+  const createdAt = nowIso()
+  const updatedAt = createdAt
+  const tags = stringifyTags(input.tags || [])
+
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    const rows = (await sql`INSERT INTO news (title, description, summary, date, image, featured, category, tags, author, read_time, content, created_at, updated_at)
+      VALUES (${input.title}, ${input.description}, ${input.summary}, ${input.date}, ${input.image}, ${input.featured}, ${input.category}, ${tags}, ${input.author}, ${input.readTime}, ${input.content}, ${createdAt}, ${updatedAt})
+      RETURNING id, title, description, summary, date, image, featured, category, tags, author, read_time, content, created_at, updated_at`) as any[]
+    const r = rows[0]
+    return {
+      id: Number(r.id),
+      title: r.title,
+      description: r.description,
+      summary: r.summary,
+      date: r.date,
+      image: r.image,
+      featured: Boolean(r.featured),
+      category: r.category,
+      tags: parseTags(r.tags ?? "[]"),
+      author: r.author,
+      readTime: r.read_time,
+      content: r.content ?? null,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }
+  }
+
+  const db = getSqliteDb()
+  const info = db
+    .prepare(
+      `INSERT INTO news (title, description, summary, date, image, featured, category, tags, author, read_time, content, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(
+      input.title,
+      input.description,
+      input.summary,
+      input.date,
+      input.image,
+      input.featured ? 1 : 0,
+      input.category,
+      tags,
+      input.author,
+      input.readTime,
+      input.content ?? null,
+      createdAt,
+      updatedAt,
+    )
+  const id = Number(info.lastInsertRowid)
+  return {
+    id,
+    ...input,
+    tags: input.tags || [],
+    createdAt,
+    updatedAt,
+  }
+}
+
+export async function deleteNews(id: number): Promise<void> {
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    await sql`DELETE FROM news WHERE id = ${id}`
+    return
+  }
+  const db = getSqliteDb()
+  db.prepare(`DELETE FROM news WHERE id = ?`).run(id)
 }
 
 export async function updateUserRoleByEmail(email: string, role: Role): Promise<void> {
