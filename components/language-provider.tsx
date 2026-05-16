@@ -508,7 +508,7 @@ const LanguageContext = createContext<LanguageContextType | null>(null)
 const STORAGE_KEY = "gots_language"
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguage] = useState<Language>("fr")
+  const [language, setLanguage] = useState<Language>("es")
 
   useEffect(() => {
     const savedLanguage = window.localStorage.getItem(STORAGE_KEY) as Language | null
