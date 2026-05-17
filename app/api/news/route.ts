@@ -33,22 +33,28 @@ export async function POST(req: Request) {
   if (!canEditNews(true)) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const body = await req.json().catch(() => null)
-  const title = (body?.title ?? "").toString().trim()
-  const description = (body?.description ?? "").toString().trim()
-  const summary = (body?.summary ?? "").toString().trim()
-  const date = (body?.date ?? "").toString().trim()
-  const image = (body?.image ?? "").toString().trim()
+  const titleRaw = (body?.title ?? "").toString().trim()
+  const descriptionRaw = (body?.description ?? "").toString().trim()
+  const summaryRaw = (body?.summary ?? "").toString().trim()
+  const dateRaw = (body?.date ?? "").toString().trim()
+  const imageRaw = (body?.image ?? "").toString().trim()
   const featured = Boolean(body?.featured)
-  const category = (body?.category ?? "").toString().trim()
+  const categoryRaw = (body?.category ?? "").toString().trim()
   const tags = Array.isArray(body?.tags) ? body.tags.map((t: any) => String(t).trim()).filter(Boolean) : []
-  const author = (body?.author ?? "").toString().trim()
-  const readTime = (body?.readTime ?? "").toString().trim()
+  const authorRaw = (body?.author ?? "").toString().trim()
+  const readTimeRaw = (body?.readTime ?? "").toString().trim()
   const content = (body?.content ?? "").toString()
   const normalizedContent = content.trim() ? content : null
 
-  if (!title || !description || !summary || !date || !image || !category || !author || !readTime) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-  }
+  const today = new Date().toISOString().slice(0, 10)
+  const title = titleRaw || "Sin título"
+  const description = descriptionRaw || ""
+  const summary = summaryRaw || ""
+  const date = dateRaw || today
+  const image = imageRaw || "/placeholder.svg"
+  const category = categoryRaw || "General"
+  const author = authorRaw || (session.user as any)?.name || (session.user as any)?.email || "GOTS UIS"
+  const readTime = readTimeRaw || "1 min"
 
   try {
     const created = await createNews({

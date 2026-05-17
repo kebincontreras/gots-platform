@@ -47,9 +47,7 @@ export function NewsEditor() {
   const [readTime, setReadTime] = useState("3 min")
   const [content, setContent] = useState("")
 
-  const canSave = useMemo(() => {
-    return Boolean(title.trim() && summary.trim() && description.trim() && date.trim() && image.trim() && category.trim() && author.trim() && readTime.trim())
-  }, [title, summary, description, date, image, category, author, readTime])
+  const canSave = useMemo(() => saving === false, [saving])
 
   const refresh = async () => {
     setLoading(true)
@@ -205,7 +203,7 @@ export function NewsEditor() {
             Destacada
           </label>
           <div className="grid gap-1">
-            <div className="text-sm font-medium">Contenido (opcional)</div>
+            <div className="text-sm font-medium">Contenido</div>
             <Input value={content} onChange={(e) => setContent(e.target.value)} placeholder="Texto largo..." />
           </div>
 
