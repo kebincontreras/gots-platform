@@ -648,6 +648,112 @@ export async function deleteNews(id: number): Promise<void> {
   db.prepare(`DELETE FROM news WHERE id = ?`).run(id)
 }
 
+export async function updateNews(
+  id: number,
+  input: Partial<Omit<NewsItem, "id" | "createdAt" | "updatedAt">>,
+): Promise<NewsItem> {
+  const updatedAt = nowIso()
+  const tags = input.tags ? stringifyTags(input.tags) : undefined
+
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+
+    const rows = (await sql`UPDATE news SET
+      title = COALESCE(${input.title ?? null}, title),
+      description = COALESCE(${input.description ?? null}, description),
+      summary = COALESCE(${input.summary ?? null}, summary),
+      date = COALESCE(${input.date ?? null}, date),
+      image = COALESCE(${input.image ?? null}, image),
+      featured = COALESCE(${typeof input.featured === "boolean" ? input.featured : null}, featured),
+      category = COALESCE(${input.category ?? null}, category),
+      tags = COALESCE(${tags ?? null}, tags),
+      author = COALESCE(${input.author ?? null}, author),
+      read_time = COALESCE(${input.readTime ?? null}, read_time),
+      content = COALESCE(${input.content ?? null}, content),
+      updated_at = ${updatedAt}
+      WHERE id = ${id}
+      RETURNING id, title, description, summary, date, image, featured, category, tags, author, read_time, content, created_at, updated_at`) as any[]
+    const r = rows[0]
+    if (!r) throw new Error("Not found")
+    return {
+      id: Number(r.id),
+      title: r.title ?? "",
+      description: r.description ?? "",
+      summary: r.summary ?? "",
+      date: r.date ?? "",
+      image: r.image ?? "/placeholder.svg",
+      featured: Boolean(r.featured),
+      category: r.category ?? "",
+      tags: parseTags(r.tags ?? "[]"),
+      author: r.author ?? "",
+      readTime: r.read_time ?? "",
+      content: r.content ?? null,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }
+  }
+
+  const db = getSqliteDb()
+  const current = db.prepare(`SELECT id FROM news WHERE id = ? LIMIT 1`).get(id) as any
+  if (!current) throw new Error("Not found")
+
+  db.prepare(
+    `UPDATE news SET
+      title = COALESCE(?, title),
+      description = COALESCE(?, description),
+      summary = COALESCE(?, summary),
+      date = COALESCE(?, date),
+      image = COALESCE(?, image),
+      featured = COALESCE(?, featured),
+      category = COALESCE(?, category),
+      tags = COALESCE(?, tags),
+      author = COALESCE(?, author),
+      read_time = COALESCE(?, read_time),
+      content = COALESCE(?, content),
+      updated_at = ?
+     WHERE id = ?`,
+  ).run(
+    input.title ?? null,
+    input.description ?? null,
+    input.summary ?? null,
+    input.date ?? null,
+    input.image ?? null,
+    typeof input.featured === "boolean" ? (input.featured ? 1 : 0) : null,
+    input.category ?? null,
+    tags ?? null,
+    input.author ?? null,
+    input.readTime ?? null,
+    input.content ?? null,
+    updatedAt,
+    id,
+  )
+
+  const row = db
+    .prepare(
+      `SELECT id, title, description, summary, date, image, featured, category, tags, author, read_time, content, created_at, updated_at
+       FROM news WHERE id = ? LIMIT 1`,
+    )
+    .get(id) as any
+  return {
+    id: Number(row.id),
+    title: row.title ?? "",
+    description: row.description ?? "",
+    summary: row.summary ?? "",
+    date: row.date ?? "",
+    image: row.image ?? "/placeholder.svg",
+    featured: Boolean(row.featured),
+    category: row.category ?? "",
+    tags: parseTags(row.tags ?? "[]"),
+    author: row.author ?? "",
+    readTime: row.read_time ?? "",
+    content: row.content ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
 function parseKeywords(value: string): string[] {
   try {
     const parsed = JSON.parse(value)
@@ -811,6 +917,118 @@ export async function deletePublication(id: number): Promise<void> {
   }
   const db = getSqliteDb()
   db.prepare(`DELETE FROM publications WHERE id = ?`).run(id)
+}
+
+export async function updatePublication(
+  id: number,
+  input: Partial<Omit<Publication, "id" | "createdAt" | "updatedAt" | "createdBy">>,
+): Promise<Publication> {
+  const updatedAt = nowIso()
+  const keywords = input.keywords ? stringifyKeywords(input.keywords) : undefined
+
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    const rows = (await sql`UPDATE publications SET
+      title = COALESCE(${input.title ?? null}, title),
+      authors = COALESCE(${input.authors ?? null}, authors),
+      journal = COALESCE(${input.journal ?? null}, journal),
+      conference = COALESCE(${input.conference ?? null}, conference),
+      year = COALESCE(${typeof input.year === "number" ? input.year : null}, year),
+      image = COALESCE(${input.image ?? null}, image),
+      pdf_url = COALESCE(${input.pdfUrl ?? null}, pdf_url),
+      external_url = COALESCE(${input.externalUrl ?? null}, external_url),
+      supplementary_material = COALESCE(${input.supplementaryMaterial ?? null}, supplementary_material),
+      starred = COALESCE(${typeof input.starred === "boolean" ? input.starred : null}, starred),
+      abstract = COALESCE(${input.abstract ?? null}, abstract),
+      keywords = COALESCE(${keywords ?? null}, keywords),
+      updated_at = ${updatedAt}
+      WHERE id = ${id}
+      RETURNING id, title, authors, journal, conference, year, image, pdf_url, external_url, supplementary_material, starred, abstract, keywords, created_by, created_at, updated_at`) as any[]
+    const r = rows[0]
+    if (!r) throw new Error("Not found")
+    return {
+      id: Number(r.id),
+      title: r.title,
+      authors: r.authors,
+      journal: r.journal,
+      conference: r.conference ?? null,
+      year: Number(r.year),
+      image: r.image ?? null,
+      pdfUrl: r.pdf_url,
+      externalUrl: r.external_url,
+      supplementaryMaterial: r.supplementary_material ?? null,
+      starred: Boolean(r.starred),
+      abstract: r.abstract,
+      keywords: parseKeywords(r.keywords ?? "[]"),
+      createdBy: r.created_by ?? null,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }
+  }
+
+  const db = getSqliteDb()
+  const current = db.prepare(`SELECT id FROM publications WHERE id = ? LIMIT 1`).get(id) as any
+  if (!current) throw new Error("Not found")
+
+  db.prepare(
+    `UPDATE publications SET
+      title = COALESCE(?, title),
+      authors = COALESCE(?, authors),
+      journal = COALESCE(?, journal),
+      conference = COALESCE(?, conference),
+      year = COALESCE(?, year),
+      image = COALESCE(?, image),
+      pdf_url = COALESCE(?, pdf_url),
+      external_url = COALESCE(?, external_url),
+      supplementary_material = COALESCE(?, supplementary_material),
+      starred = COALESCE(?, starred),
+      abstract = COALESCE(?, abstract),
+      keywords = COALESCE(?, keywords),
+      updated_at = ?
+     WHERE id = ?`,
+  ).run(
+    input.title ?? null,
+    input.authors ?? null,
+    input.journal ?? null,
+    input.conference ?? null,
+    typeof input.year === "number" ? input.year : null,
+    input.image ?? null,
+    input.pdfUrl ?? null,
+    input.externalUrl ?? null,
+    input.supplementaryMaterial ?? null,
+    typeof input.starred === "boolean" ? (input.starred ? 1 : 0) : null,
+    input.abstract ?? null,
+    keywords ?? null,
+    updatedAt,
+    id,
+  )
+
+  const row = db
+    .prepare(
+      `SELECT id, title, authors, journal, conference, year, image, pdf_url, external_url, supplementary_material, starred, abstract, keywords, created_by, created_at, updated_at
+       FROM publications WHERE id = ? LIMIT 1`,
+    )
+    .get(id) as any
+  return {
+    id: Number(row.id),
+    title: row.title,
+    authors: row.authors,
+    journal: row.journal,
+    conference: row.conference ?? null,
+    year: Number(row.year),
+    image: row.image ?? null,
+    pdfUrl: row.pdf_url,
+    externalUrl: row.external_url,
+    supplementaryMaterial: row.supplementary_material ?? null,
+    starred: Boolean(row.starred),
+    abstract: row.abstract,
+    keywords: parseKeywords(row.keywords ?? "[]"),
+    createdBy: row.created_by ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
 }
 
 export async function updateUserRoleByEmail(email: string, role: Role): Promise<void> {

@@ -34,6 +34,7 @@ export function NewsEditor() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
 
   const [title, setTitle] = useState("")
   const [summary, setSummary] = useState("")
@@ -124,6 +125,49 @@ export function NewsEditor() {
     }
   }
 
+  const onUpdate = async () => {
+    if (!editingId) return
+    setSaving(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/news/${editingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          summary,
+          description,
+          date,
+          image,
+          featured,
+          category,
+          tags: parseTags(tags),
+          author,
+          readTime,
+          content,
+        }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body?.error ?? "No se pudo actualizar.")
+      setEditingId(null)
+      setTitle("")
+      setSummary("")
+      setDescription("")
+      setDate("")
+      setImage("/Noticias/")
+      setFeatured(false)
+      setCategory("")
+      setTags("")
+      setReadTime("3 min")
+      setContent("")
+      await refresh()
+    } catch (e: any) {
+      setError(e?.message ?? "No se pudo actualizar.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const onDelete = async (id: number) => {
     if (!confirm("¿Eliminar esta noticia?")) return
     setError(null)
@@ -137,11 +181,43 @@ export function NewsEditor() {
     }
   }
 
+  const startEdit = (n: NewsItem) => {
+    setEditingId(n.id)
+    setTitle(n.title ?? "")
+    setSummary(n.summary ?? "")
+    setDescription(n.description ?? "")
+    setDate(n.date ?? "")
+    setImage(n.image ?? "/Noticias/")
+    setFeatured(Boolean(n.featured))
+    setCategory(n.category ?? "")
+    setTags((n.tags || []).join(", "))
+    setAuthor(n.author ?? "GOTS UIS")
+    setReadTime(n.readTime ?? "1 min")
+    setContent((n.content ?? "") as any)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setTitle("")
+    setSummary("")
+    setDescription("")
+    setDate("")
+    setImage("/Noticias/")
+    setFeatured(false)
+    setCategory("")
+    setTags("")
+    setAuthor("GOTS UIS")
+    setReadTime("3 min")
+    setContent("")
+    setError(null)
+  }
+
   return (
     <div className="grid gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Nueva noticia</CardTitle>
+          <CardTitle>{editingId ? `Editar noticia #${editingId}` : "Nueva noticia"}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
           <div className="grid gap-1">
@@ -208,9 +284,20 @@ export function NewsEditor() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button onClick={onCreate} disabled={!canSave || saving}>
-              {saving ? "Guardando..." : "Crear noticia"}
-            </Button>
+            {editingId ? (
+              <>
+                <Button onClick={onUpdate} disabled={!canSave || saving}>
+                  {saving ? "Guardando..." : "Guardar cambios"}
+                </Button>
+                <Button variant="outline" onClick={cancelEdit} disabled={saving}>
+                  Cancelar
+                </Button>
+              </>
+            ) : (
+              <Button onClick={onCreate} disabled={!canSave || saving}>
+                {saving ? "Guardando..." : "Crear noticia"}
+              </Button>
+            )}
             <Button variant="outline" onClick={refresh} disabled={loading || saving}>
               Actualizar
             </Button>
@@ -242,9 +329,14 @@ export function NewsEditor() {
                   ))}
                 </div>
               </div>
-              <Button variant="destructive" size="sm" onClick={() => onDelete(n.id)}>
-                Eliminar
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => startEdit(n)} disabled={saving}>
+                  Editar
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => onDelete(n.id)} disabled={saving}>
+                  Eliminar
+                </Button>
+              </div>
             </div>
           ))}
         </CardContent>

@@ -34,6 +34,7 @@ export function PublicationsEditor() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
 
   const [title, setTitle] = useState("")
   const [authors, setAuthors] = useState("")
@@ -115,6 +116,53 @@ export function PublicationsEditor() {
     }
   }
 
+  const onUpdate = async () => {
+    if (!editingId) return
+    setSaving(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/publications/${editingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          authors,
+          journal,
+          conference,
+          year: Number(year),
+          image: image.trim() || null,
+          pdfUrl,
+          externalUrl,
+          supplementaryMaterial: supplementaryMaterial.trim() || null,
+          starred,
+          abstract,
+          keywords: parseKeywords(keywords),
+        }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body?.error ?? "No se pudo actualizar.")
+
+      setEditingId(null)
+      setTitle("")
+      setAuthors("")
+      setJournal("")
+      setConference("")
+      setYear("")
+      setImage("")
+      setPdfUrl("")
+      setExternalUrl("")
+      setSupplementaryMaterial("")
+      setStarred(false)
+      setAbstract("")
+      setKeywords("")
+      await refresh()
+    } catch (e: any) {
+      setError(e?.message ?? "No se pudo actualizar.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const onDelete = async (id: number) => {
     if (!confirm("¿Eliminar esta publicación?")) return
     setError(null)
@@ -128,11 +176,45 @@ export function PublicationsEditor() {
     }
   }
 
+  const startEdit = (p: Publication) => {
+    setEditingId(p.id)
+    setTitle(p.title ?? "")
+    setAuthors(p.authors ?? "")
+    setJournal(p.journal ?? "")
+    setConference((p.conference ?? "") as any)
+    setYear(String(p.year ?? ""))
+    setImage((p.image ?? "") as any)
+    setPdfUrl(p.pdfUrl ?? "")
+    setExternalUrl(p.externalUrl ?? "")
+    setSupplementaryMaterial((p.supplementaryMaterial ?? "") as any)
+    setStarred(Boolean(p.starred))
+    setAbstract(p.abstract ?? "")
+    setKeywords((p.keywords || []).join(", "))
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setTitle("")
+    setAuthors("")
+    setJournal("")
+    setConference("")
+    setYear("")
+    setImage("")
+    setPdfUrl("")
+    setExternalUrl("")
+    setSupplementaryMaterial("")
+    setStarred(false)
+    setAbstract("")
+    setKeywords("")
+    setError(null)
+  }
+
   return (
     <div className="grid gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Nueva publicación</CardTitle>
+          <CardTitle>{editingId ? `Editar publicación #${editingId}` : "Nueva publicación"}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
           <div className="grid gap-1">
@@ -191,9 +273,20 @@ export function PublicationsEditor() {
           </label>
 
           <div className="flex items-center gap-3">
-            <Button onClick={onCreate} disabled={!canSave || saving}>
-              {saving ? "Guardando..." : "Crear publicación"}
-            </Button>
+            {editingId ? (
+              <>
+                <Button onClick={onUpdate} disabled={!canSave || saving}>
+                  {saving ? "Guardando..." : "Guardar cambios"}
+                </Button>
+                <Button variant="outline" onClick={cancelEdit} disabled={saving}>
+                  Cancelar
+                </Button>
+              </>
+            ) : (
+              <Button onClick={onCreate} disabled={!canSave || saving}>
+                {saving ? "Guardando..." : "Crear publicación"}
+              </Button>
+            )}
             <Button variant="outline" onClick={refresh} disabled={loading || saving}>
               Actualizar
             </Button>
@@ -225,9 +318,14 @@ export function PublicationsEditor() {
                   ))}
                 </div>
               </div>
-              <Button variant="destructive" size="sm" onClick={() => onDelete(p.id)}>
-                Eliminar
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => startEdit(p)} disabled={saving}>
+                  Editar
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => onDelete(p.id)} disabled={saving}>
+                  Eliminar
+                </Button>
+              </div>
             </div>
           ))}
         </CardContent>
@@ -235,4 +333,3 @@ export function PublicationsEditor() {
     </div>
   )
 }
-
