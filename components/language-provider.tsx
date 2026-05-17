@@ -56,6 +56,10 @@ type TranslationKey =
   | "auth.password"
   | "auth.name"
   | "auth.passwordMin"
+  | "auth.confirmEmail"
+  | "auth.confirmPassword"
+  | "auth.mismatchEmail"
+  | "auth.mismatchPassword"
   | "auth.signIn"
   | "auth.signOut"
   | "auth.entering"
@@ -175,6 +179,10 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "auth.password": "Mot de passe",
     "auth.name": "Nom",
     "auth.passwordMin": "Mot de passe (min. 8)",
+    "auth.confirmEmail": "Confirmer l'email",
+    "auth.confirmPassword": "Confirmer le mot de passe",
+    "auth.mismatchEmail": "Les emails ne correspondent pas.",
+    "auth.mismatchPassword": "Les mots de passe ne correspondent pas.",
     "auth.signIn": "Se connecter",
     "auth.signOut": "Se deconnecter",
     "auth.entering": "Connexion...",
@@ -303,6 +311,10 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "auth.password": "Contraseña",
     "auth.name": "Nombre",
     "auth.passwordMin": "Contraseña (mín. 8)",
+    "auth.confirmEmail": "Confirmar email",
+    "auth.confirmPassword": "Confirmar contraseña",
+    "auth.mismatchEmail": "Los correos no coinciden.",
+    "auth.mismatchPassword": "Las contraseñas no coinciden.",
     "auth.signIn": "Entrar",
     "auth.signOut": "Salir",
     "auth.entering": "Entrando...",
@@ -430,6 +442,10 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "auth.password": "Password",
     "auth.name": "Name",
     "auth.passwordMin": "Password (min. 8)",
+    "auth.confirmEmail": "Confirm email",
+    "auth.confirmPassword": "Confirm password",
+    "auth.mismatchEmail": "Emails do not match.",
+    "auth.mismatchPassword": "Passwords do not match.",
     "auth.signIn": "Sign in",
     "auth.signOut": "Sign out",
     "auth.entering": "Signing in...",

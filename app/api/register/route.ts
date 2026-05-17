@@ -15,10 +15,18 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => null)
     const name = (body?.name ?? "").toString().trim()
     const email = (body?.email ?? "").toString().trim().toLowerCase()
+    const emailConfirm = (body?.emailConfirm ?? "").toString().trim().toLowerCase()
     const password = (body?.password ?? "").toString()
+    const passwordConfirm = (body?.passwordConfirm ?? "").toString()
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: "Faltan campos." }, { status: 400 })
+    }
+    if (emailConfirm && emailConfirm !== email) {
+      return NextResponse.json({ error: "Los correos no coinciden." }, { status: 400 })
+    }
+    if (passwordConfirm && passwordConfirm !== password) {
+      return NextResponse.json({ error: "Las contraseñas no coinciden." }, { status: 400 })
     }
     if (password.length < 8) {
       return NextResponse.json({ error: "La contraseña debe tener al menos 8 caracteres." }, { status: 400 })

@@ -12,7 +12,9 @@ export default function RegisterPage() {
   const router = useRouter()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
+  const [emailConfirm, setEmailConfirm] = useState("")
   const [password, setPassword] = useState("")
+  const [passwordConfirm, setPasswordConfirm] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -27,12 +29,22 @@ export default function RegisterPage() {
           onSubmit={async (e) => {
             e.preventDefault()
             setError(null)
+
+            if (email.trim().toLowerCase() !== emailConfirm.trim().toLowerCase()) {
+              setError(t("auth.mismatchEmail"))
+              return
+            }
+            if (password !== passwordConfirm) {
+              setError(t("auth.mismatchPassword"))
+              return
+            }
+
             setLoading(true)
 
             const res = await fetch("/api/register", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ name, email, password }),
+              body: JSON.stringify({ name, email, emailConfirm, password, passwordConfirm }),
             })
             if (!res.ok) {
               const body = await res.json().catch(() => ({}))
@@ -61,15 +73,44 @@ export default function RegisterPage() {
           </div>
           <div className="space-y-1">
             <label className="text-sm font-medium">{t("auth.email")}</label>
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" />
+            <Input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onCopy={(e) => e.preventDefault()}
+              onCut={(e) => e.preventDefault()}
+              type="email"
+              autoComplete="email"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">{t("auth.confirmEmail")}</label>
+            <Input
+              value={emailConfirm}
+              onChange={(e) => setEmailConfirm(e.target.value)}
+              onPaste={(e) => e.preventDefault()}
+              type="email"
+              autoComplete="off"
+            />
           </div>
           <div className="space-y-1">
             <label className="text-sm font-medium">{t("auth.passwordMin")}</label>
             <Input
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onCopy={(e) => e.preventDefault()}
+              onCut={(e) => e.preventDefault()}
               type="password"
               autoComplete="new-password"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">{t("auth.confirmPassword")}</label>
+            <Input
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              onPaste={(e) => e.preventDefault()}
+              type="password"
+              autoComplete="off"
             />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
