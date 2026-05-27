@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { MessagesSquare, X } from "lucide-react"
+import { MessagesSquare, UserRound, X } from "lucide-react"
 
 type Member = { id: string; name: string; displayName?: string | null; memberCategory?: string | null; role?: string | null }
 type Message = { id: string; userId: string; userName: string; message: string; createdAt: string }
@@ -19,6 +19,7 @@ export function ChatDock() {
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [recipient, setRecipient] = useState<Member | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
   const enabled = Boolean(session?.user) && (role === "PROFESSOR" || groupMember)
@@ -117,21 +118,7 @@ export function ChatDock() {
             </Button>
           </div>
 
-          <div className="flex-1 grid grid-cols-[140px_1fr] min-h-0">
-            <div className="border-r p-2 overflow-auto">
-              <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">Integrantes</div>
-              <div className="grid gap-1">
-                {sortedMembers.map((m) => (
-                  <div key={m.id} className="text-xs rounded-md border px-2 py-1">
-                    <div className="font-medium truncate">{m.displayName || m.name}</div>
-                    <div className="text-[10px] text-muted-foreground truncate">
-                      {String(m.role || "").toUpperCase() === "PROFESSOR" ? "Profesor" : m.memberCategory || "Miembro"}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
+          <div className="flex-1 grid grid-cols-[1fr_140px] min-h-0">
             <div className="flex flex-col min-h-0">
               <div className="flex-1 p-2 overflow-auto">
                 {error ? <div className="text-sm text-destructive">{error}</div> : null}
@@ -150,17 +137,39 @@ export function ChatDock() {
                 </div>
               </div>
 
+              {recipient ? (
+                <div className="border-t px-2 py-1 text-xs flex items-center justify-between gap-2 bg-muted/30">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <UserRound className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="truncate">
+                      Para: <span className="font-medium">{recipient.displayName || recipient.name}</span>
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    aria-label="Quitar destinatario"
+                    onClick={() => setRecipient(null)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ) : null}
+
               <form
                 className="border-t p-2 flex gap-2"
                 onSubmit={async (e) => {
                   e.preventDefault()
                   const message = text.trim()
                   if (!message) return
+                  const finalMessage = recipient ? `@${recipient.displayName || recipient.name}: ${message}` : message
                   setText("")
                   const res = await fetch("/api/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message }),
+                    body: JSON.stringify({ message: finalMessage }),
                   })
                   if (!res.ok) {
                     const body = await res.json().catch(() => ({}))
@@ -170,11 +179,40 @@ export function ChatDock() {
                   await loadMessages()
                 }}
               >
-                <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Escribe..." />
+                <Input
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder={recipient ? `Escribe a ${recipient.displayName || recipient.name}...` : "Escribe..."}
+                />
                 <Button type="submit">Enviar</Button>
               </form>
               <div className="px-2 pb-2 text-[10px] text-muted-foreground">
                 Nota: este chat se actualiza cada 5s. Para tiempo real (sin refresh) hay que integrar Ably/Pusher.
+              </div>
+            </div>
+
+            <div className="border-l p-2 overflow-auto">
+              <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">Integrantes</div>
+              <div className="grid gap-1">
+                {sortedMembers.map((m) => {
+                  const isSelected = recipient?.id === m.id
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      className={`text-left text-xs rounded-md border px-2 py-1 hover:bg-muted/40 ${
+                        isSelected ? "border-primary bg-primary/5" : ""
+                      }`}
+                      onClick={() => setRecipient(m)}
+                      aria-label={`Escribir a ${m.displayName || m.name}`}
+                    >
+                      <div className="font-medium truncate">{m.displayName || m.name}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        {String(m.role || "").toUpperCase() === "PROFESSOR" ? "Profesor" : m.memberCategory || "Miembro"}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -183,4 +221,3 @@ export function ChatDock() {
     </div>
   )
 }
-
