@@ -26,9 +26,17 @@ interface TeamMember {
   role?: string | null
 }
 
-type GroupKey = "profesores" | "doctorado" | "maestria" | "fisica" | "otros"
+type GroupKey =
+  | "profesores"
+  | "doctorado"
+  | "maestria"
+  | "pregrado"
+  | "fisica"
+  | "profesional"
+  | "administrativo"
+  | "otros"
 
-const GROUP_ORDER: GroupKey[] = ["profesores", "doctorado", "maestria", "fisica", "otros"]
+const GROUP_ORDER: GroupKey[] = ["profesores", "doctorado", "maestria", "pregrado", "fisica", "profesional", "administrativo", "otros"]
 
 function normalize(value?: string | null) {
   return (value || "")
@@ -48,7 +56,10 @@ function getGroup(program: string): GroupKey {
   if (text.includes("PROFESOR")) return "profesores"
   if (text.includes("DOCTORADO")) return "doctorado"
   if (text.includes("MAESTRIA")) return "maestria"
+  if (text.includes("PREGRADO")) return "pregrado"
   if (text.includes("FISICA")) return "fisica"
+  if (text.includes("PROFESIONAL") || text.includes("INVITAD")) return "profesional"
+  if (text.includes("ADMINISTRATIV")) return "administrativo"
   return "otros"
 }
 
@@ -172,7 +183,10 @@ export default function EquipoPage() {
         profesores: "Profesores",
         doctorado: "Estudiantes Doctorado",
         maestria: "Estudiantes Maestria",
+        pregrado: "Estudiantes Pregrado",
         fisica: "Estudiantes Fisica",
+        profesional: "Profesional / Invitado",
+        administrativo: "Administrativo",
         otros: "Otros",
       },
       mailAria: "Enviar correo",
@@ -184,7 +198,10 @@ export default function EquipoPage() {
         profesores: "Professors",
         doctorado: "Doctoral Students",
         maestria: "Master's Students",
+        pregrado: "Undergraduate Students",
         fisica: "Physics Students",
+        profesional: "Professional / Guest",
+        administrativo: "Administrative",
         otros: "Others",
       },
       mailAria: "Send email",
@@ -196,7 +213,10 @@ export default function EquipoPage() {
         profesores: "Professeurs",
         doctorado: "Etudiants en doctorat",
         maestria: "Etudiants en master",
+        pregrado: "Etudiants en licence",
         fisica: "Etudiants en physique",
+        profesional: "Professionnel / Invite",
+        administrativo: "Administratif",
         otros: "Autres",
       },
       mailAria: "Envoyer un e-mail",
@@ -265,7 +285,10 @@ export default function EquipoPage() {
       profesores: [],
       doctorado: [],
       maestria: [],
+      pregrado: [],
       fisica: [],
+      profesional: [],
+      administrativo: [],
       otros: [],
     }
 

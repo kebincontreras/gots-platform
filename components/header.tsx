@@ -14,9 +14,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
@@ -149,17 +146,13 @@ export function Header() {
                     )}
 
                     <DropdownMenuSeparator />
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger>Editar</DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="w-56" side="left" sideOffset={8} collisionPadding={12}>
-                        <DropdownMenuItem asChild>
-                          <a href="/noticias/editor">Noticias</a>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <a href="/publicaciones/editor">Artículos</a>
-                        </DropdownMenuItem>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
+                    <DropdownMenuLabel>Editar</DropdownMenuLabel>
+                    <DropdownMenuItem asChild>
+                      <a href="/noticias/editor">Noticias</a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <a href="/publicaciones/editor">Artículos</a>
+                    </DropdownMenuItem>
 
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
