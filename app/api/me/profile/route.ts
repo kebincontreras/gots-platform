@@ -15,6 +15,17 @@ function normalizeUrl(raw: string): string | null {
   }
 }
 
+function normalizePhoto(raw: string): string | null {
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  if (trimmed.startsWith("data:image/")) {
+    // guardrail: keep it reasonably small (~1.2MB of text)
+    if (trimmed.length > 1_200_000) return null
+    return trimmed
+  }
+  return normalizeUrl(trimmed)
+}
+
 export async function GET() {
   const session = await getServerSession(authOptions)
   const userId = (session?.user as any)?.id as string | undefined
@@ -33,6 +44,7 @@ export async function GET() {
       academicLevel: user.academicLevel,
       memberCategory: user.memberCategory,
       directorId: user.directorId,
+      directorName: user.directorName,
       groupMember: user.groupMember,
     },
   })
@@ -53,6 +65,7 @@ export async function POST(req: Request) {
   const academicLevel = body?.academicLevel != null ? String(body.academicLevel).trim() : undefined
   const memberCategory = body?.memberCategory != null ? String(body.memberCategory).trim() : undefined
   const directorId = body?.directorId != null ? String(body.directorId).trim() : undefined
+  const directorName = body?.directorName != null ? String(body.directorName).trim() : undefined
 
   await updateUserProfile(userId, {
     displayName: displayName === "" ? null : displayName,
@@ -60,12 +73,12 @@ export async function POST(req: Request) {
     linkedinUrl: linkedinUrlRaw === undefined ? undefined : normalizeUrl(linkedinUrlRaw),
     researchgateUrl: researchgateUrlRaw === undefined ? undefined : normalizeUrl(researchgateUrlRaw),
     scholarUrl: scholarUrlRaw === undefined ? undefined : normalizeUrl(scholarUrlRaw),
-    photoUrl: photoUrlRaw === undefined ? undefined : normalizeUrl(photoUrlRaw),
+    photoUrl: photoUrlRaw === undefined ? undefined : normalizePhoto(photoUrlRaw),
     academicLevel: academicLevel === "" ? null : academicLevel,
     memberCategory: memberCategory === "" ? null : memberCategory,
     directorId: directorId === "" ? null : directorId,
+    directorName: directorName === "" ? null : directorName,
   })
 
   return NextResponse.json({ ok: true })
 }
-

@@ -6,14 +6,11 @@ import { Footer } from "@/components/footer"
 import { LinksForm } from "@/components/links-form"
 import { TasksPanel } from "@/components/tasks-panel"
 import { useLanguage } from "@/components/language-provider"
-import { Button } from "@/components/ui/button"
 import { MembershipRequestCard } from "@/components/membership-request-card"
 import { ProfileForm, type ProfileDraft, type ProfessorOption } from "@/components/profile-form"
 import { GroupChat } from "@/components/group-chat"
 import { SecurityForm } from "@/components/security-form"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { Menu } from "lucide-react"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { useSearchParams } from "next/navigation"
 
 export function StudentDashboard({
@@ -25,6 +22,7 @@ export function StudentDashboard({
   pendingMembershipRequest,
   initialProfile,
   professors,
+  legacyDirectorNames,
 }: {
   userId: string
   name: string
@@ -34,13 +32,13 @@ export function StudentDashboard({
   pendingMembershipRequest: { id: string; createdAt: string } | null
   initialProfile: ProfileDraft
   professors: ProfessorOption[]
+  legacyDirectorNames: string[]
 }) {
   const { t } = useLanguage()
   const greeting = t("dashboard.studentGreeting").replace("{name}", name)
   const hasAdvances = Boolean(driveEmbedUrl || docEmbedUrl)
   const advancesLabel = useMemo(() => (hasAdvances ? "Avances" : "Avances (sin enlaces)"), [hasAdvances])
   const [active, setActive] = useState<"perfil" | "seguridad" | "avances" | "calendario" | "chat">("perfil")
-  const [menuOpen, setMenuOpen] = useState(false)
   const params = useSearchParams()
 
   // Allow deep-links like /dashboard?tab=avances
@@ -68,55 +66,6 @@ export function StudentDashboard({
         <div className="mt-6 grid gap-6">
           <MembershipRequestCard groupMember={groupMember} pending={pendingMembershipRequest} />
 
-          <div className="flex items-center justify-between gap-3">
-            <Tabs value={active} onValueChange={(v: any) => setActive(v)} className="hidden md:flex">
-              <TabsList>
-                <TabsTrigger value="perfil">Perfil</TabsTrigger>
-                <TabsTrigger value="seguridad">Seguridad</TabsTrigger>
-                <TabsTrigger value="avances">Avances</TabsTrigger>
-                <TabsTrigger value="calendario">Calendario</TabsTrigger>
-                {groupMember ? <TabsTrigger value="chat">Chat</TabsTrigger> : null}
-              </TabsList>
-            </Tabs>
-
-            <div className="md:hidden">
-              <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="icon" aria-label="Menu">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left">
-                  <SheetHeader>
-                    <SheetTitle>Panel</SheetTitle>
-                  </SheetHeader>
-                  <div className="p-4 grid gap-2">
-                    {(
-                      [
-                        ["perfil", "Perfil"],
-                        ["seguridad", "Seguridad"],
-                        ["avances", "Avances"],
-                        ["calendario", "Calendario"],
-                        ...(groupMember ? ([["chat", "Chat"]] as any) : []),
-                      ] as Array<[any, string]>
-                    ).map(([k, label]) => (
-                      <Button
-                        key={k}
-                        variant={active === k ? "default" : "outline"}
-                        onClick={() => {
-                          setActive(k)
-                          setMenuOpen(false)
-                        }}
-                      >
-                        {label}
-                      </Button>
-                    ))}
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
-          </div>
-
           <Tabs value={active} onValueChange={(v: any) => setActive(v)}>
             <TabsContent value="perfil">
               <div className="rounded-xl border p-5">
@@ -125,7 +74,7 @@ export function StudentDashboard({
                   Configura tu información para aparecer en la sección Equipo.
                 </p>
                 <div className="mt-4">
-                  <ProfileForm initial={initialProfile} professors={professors} />
+                  <ProfileForm initial={initialProfile} professors={professors} legacyDirectorNames={legacyDirectorNames} />
                 </div>
               </div>
             </TabsContent>

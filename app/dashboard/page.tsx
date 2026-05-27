@@ -3,6 +3,24 @@ import { redirect } from "next/navigation"
 import { authOptions } from "@/lib/auth"
 import { getPendingMembershipRequestForUser, getUserById, listProfessors } from "@/lib/store"
 import { StudentDashboard } from "@/components/student-dashboard"
+import fs from "node:fs/promises"
+import path from "node:path"
+
+async function getLegacyDirectorNames(): Promise<string[]> {
+  try {
+    const jsonPath = path.join(process.cwd(), "public", "equipo.json")
+    const raw = await fs.readFile(jsonPath, "utf8")
+    const parsed = JSON.parse(raw) as any
+    const team = Array.isArray(parsed?.team) ? parsed.team : []
+    return team
+      .filter((p: any) => p?.activo !== false)
+      .filter((p: any) => String(p?.nivelEscolar ?? "").toUpperCase() === "PROFESOR" || String(p?.cargo ?? "").toLowerCase() === "profesor")
+      .map((p: any) => `${String(p?.nombre ?? "").trim()} ${String(p?.apellido ?? "").trim()}`.trim())
+      .filter(Boolean)
+  } catch {
+    return []
+  }
+}
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -16,6 +34,7 @@ export default async function DashboardPage() {
 
   const pending = await getPendingMembershipRequestForUser(userId).catch(() => null)
   const professors = await listProfessors().catch(() => [])
+  const legacyDirectorNames = await getLegacyDirectorNames()
 
   return (
     <StudentDashboard
@@ -35,8 +54,10 @@ export default async function DashboardPage() {
         academicLevel: user.academicLevel,
         memberCategory: user.memberCategory,
         directorId: user.directorId,
+        directorName: user.directorName,
       }}
       professors={professors}
+      legacyDirectorNames={legacyDirectorNames}
     />
   )
 }

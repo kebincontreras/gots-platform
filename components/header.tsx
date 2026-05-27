@@ -119,7 +119,7 @@ export function Header() {
                       <MoreVertical className="h-5 w-5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuContent align="end" className="w-56" sideOffset={8} collisionPadding={12}>
                     <DropdownMenuLabel>Configuración</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {(session.user as any).role === "PROFESSOR" ? (
@@ -151,7 +151,7 @@ export function Header() {
                     <DropdownMenuSeparator />
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger>Editar</DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="w-56">
+                      <DropdownMenuSubContent className="w-56" side="left" sideOffset={8} collisionPadding={12}>
                         <DropdownMenuItem asChild>
                           <a href="/noticias/editor">Noticias</a>
                         </DropdownMenuItem>
@@ -172,24 +172,6 @@ export function Header() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <a
-                  href={(session.user as any).role === "PROFESSOR" ? "/profesor" : "/dashboard"}
-                  className={`text-sm font-sans font-medium transition-colors ${
-                    isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
-                  }`}
-                >
-                  {(session.user as any).role === "PROFESSOR" ? t("header.students") : t("header.panel")}
-                </a>
-                {(session.user as any).role === "PROFESSOR" ? (
-                  <a
-                    href="/profesor/tareas"
-                    className={`text-sm font-sans font-medium transition-colors ${
-                      isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
-                    }`}
-                  >
-                    {t("header.tasks")}
-                  </a>
-                ) : null}
               </div>
             ) : (
               <a
