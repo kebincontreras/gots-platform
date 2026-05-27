@@ -28,6 +28,9 @@ export async function GET(req: Request) {
   try {
     const items =
       mineRequested && userId && role !== "PROFESSOR" ? await listNewsByUser(userId) : await listNews()
+    if (!mineRequested && Array.isArray(items) && items.length === 0) {
+      return NextResponse.json({ news: readStaticNewsFallback() })
+    }
     return NextResponse.json({ news: items })
   } catch {
     // No DB configured: fall back to bundled JSON

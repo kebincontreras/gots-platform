@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -55,6 +55,7 @@ export function ProfileForm({
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState<"idle" | "saved" | "error">("idle")
   const [error, setError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const professorOptions = useMemo(() => professors ?? [], [professors])
 
@@ -207,28 +208,38 @@ export function ProfileForm({
 
       <div className="grid gap-1">
         <div className="text-sm font-medium">Foto</div>
-        <Input
+        <input
+          ref={fileInputRef}
           type="file"
           accept="image/*"
+          className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0]
             if (f) void setPhotoFromFile(f)
           }}
         />
+        <button
+          type="button"
+          className="w-full max-w-[220px] aspect-square rounded-lg border border-dashed bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-center overflow-hidden"
+          onClick={() => fileInputRef.current?.click()}
+          aria-label="Dar click para subir foto"
+        >
+          {draft.photoUrl ? (
+            <img src={draft.photoUrl} alt="Foto de perfil" className="w-full h-full object-cover" />
+          ) : (
+            <div className="text-center px-4">
+              <div className="text-sm font-medium">Dar click para subir</div>
+              <div className="text-xs text-muted-foreground mt-1">Desde tu PC</div>
+            </div>
+          )}
+        </button>
         {draft.photoUrl ? (
-          <div className="mt-2 flex items-center gap-3">
-            <img
-              src={draft.photoUrl}
-              alt="Foto de perfil"
-              className="h-16 w-16 rounded-full object-cover border"
-            />
+          <div>
             <Button type="button" variant="outline" onClick={() => setDraft((d) => ({ ...d, photoUrl: null }))}>
               Quitar foto
             </Button>
           </div>
-        ) : (
-          <div className="text-xs text-muted-foreground">Sube una imagen desde tu PC (se guarda en tu perfil).</div>
-        )}
+        ) : null}
       </div>
 
       <div className="grid gap-1 sm:grid-cols-2 sm:gap-4">

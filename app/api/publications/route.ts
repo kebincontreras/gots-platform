@@ -37,6 +37,9 @@ function readStaticPublicationsFallback() {
 export async function GET() {
   try {
     const items = await listPublications()
+    if (Array.isArray(items) && items.length === 0) {
+      return NextResponse.json({ publications: readStaticPublicationsFallback() })
+    }
     return NextResponse.json({ publications: items })
   } catch {
     const items = readStaticPublicationsFallback()

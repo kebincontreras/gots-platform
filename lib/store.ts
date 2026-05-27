@@ -680,6 +680,7 @@ export async function createUser(input: {
   const role = input.role ?? "STUDENT"
   const academicLevel = input.academicLevel ?? null
   const memberCategory = input.memberCategory ?? null
+  const displayName = input.name
 
   if (shouldUsePostgres()) {
     const sql = getPgSql()
@@ -687,22 +688,22 @@ export async function createUser(input: {
     await ensurePgSchema()
 
     await sql`
-      INSERT INTO users (id, email, name, password_hash, role, academic_level, member_category, created_at, updated_at)
-      VALUES (${id}, ${input.email}, ${input.name}, ${input.passwordHash}, ${role}, ${academicLevel}, ${memberCategory}, ${createdAt}, ${updatedAt})
+      INSERT INTO users (id, email, name, display_name, password_hash, role, academic_level, member_category, created_at, updated_at)
+      VALUES (${id}, ${input.email}, ${input.name}, ${displayName}, ${input.passwordHash}, ${role}, ${academicLevel}, ${memberCategory}, ${createdAt}, ${updatedAt})
     `
   } else {
     const db = getSqliteDb()
     db.prepare(
-      `INSERT INTO users (id, email, name, password_hash, role, academic_level, member_category, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(id, input.email, input.name, input.passwordHash, role, academicLevel, memberCategory, createdAt, updatedAt)
+      `INSERT INTO users (id, email, name, display_name, password_hash, role, academic_level, member_category, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(id, input.email, input.name, displayName, input.passwordHash, role, academicLevel, memberCategory, createdAt, updatedAt)
   }
 
   return {
     id,
     email: input.email,
     name: input.name,
-    displayName: null,
+    displayName,
     publicEmail: null,
     linkedinUrl: null,
     researchgateUrl: null,

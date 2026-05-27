@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Mail, MapPin, Phone, Instagram, Linkedin, Github } from "lucide-react"
+import { Mail, MapPin, Phone, Instagram, Github } from "lucide-react"
 import { getPagePath } from "@/lib/utils"
 import { useLanguage } from "@/components/language-provider"
 
@@ -86,20 +86,9 @@ export function ContactSection() {
                     variant="outline"
                     className="flex flex-col h-auto py-4 gap-2 hover:bg-accent/10 hover:border-accent bg-transparent"
                   >
-                    <a href="#" target="_blank" rel="noopener noreferrer">
+                    <a href="https://www.instagram.com/gots.uis?igsh=Nmhjc3VnNjJqcWto" target="_blank" rel="noopener noreferrer">
                       <Instagram className="h-5 w-5 text-black" />
                       <span className="text-xs font-sans">Instagram</span>
-                    </a>
-                  </Button>
-
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="flex flex-col h-auto py-4 gap-2 hover:bg-accent/10 hover:border-accent bg-transparent"
-                  >
-                    <a href="https://www.linkedin.com/search/results/all/?keywords=GOTS%20UIS" target="_blank" rel="noopener noreferrer">
-                      <Linkedin className="h-5 w-5 text-black" />
-                      <span className="text-xs font-sans">LinkedIn</span>
                     </a>
                   </Button>
 
