@@ -210,8 +210,11 @@ export default function EquipoPage() {
         // Keep existing team list (equipo.json)
         const legacyRes = await fetch(getImagePath("/equipo.json"))
         const legacyData = await legacyRes.json().catch(() => ({}))
+        // Legacy list should only show professors (the rest should come from accepted members).
         const legacyActive = Array.isArray(legacyData?.team)
-          ? (legacyData.team as TeamMember[]).filter((member) => member.activo)
+          ? (legacyData.team as TeamMember[])
+              .filter((member) => member.activo)
+              .filter((member) => getGroup(getProgram(member)) === "profesores")
           : []
         setLegacyMembers(legacyActive)
 
@@ -388,23 +391,23 @@ export default function EquipoPage() {
               <section className="space-y-6">
                 <div className="flex items-end justify-between gap-4">
                   <div>
-                    <h2 className="text-2xl font-serif font-bold">Equipo (histórico)</h2>
+                    <h2 className="text-2xl font-serif font-bold">Profesores (histórico)</h2>
                     <p className="text-sm text-muted-foreground">
-                      Lista original del sitio (se mantiene).
+                      Lista original del sitio (solo profesores).
                     </p>
                   </div>
                   <div className="text-sm text-muted-foreground">Total: {legacyMembers.length}</div>
                 </div>
 
-                {GROUP_ORDER.map((group) => {
-                  const members = groupedLegacyMembers[group]
+                {(() => {
+                  const members = groupedLegacyMembers.profesores
                   if (members.length === 0) return null
 
                   return (
-                    <section key={group} className="rounded-xl border border-border bg-card overflow-hidden">
+                    <section key="legacy-profesores" className="rounded-xl border border-border bg-card overflow-hidden">
                       <div className="px-6 py-4 border-b bg-secondary/60">
                         <h3 className="text-2xl font-serif font-bold">
-                          {labels.groupLabels[group]} ({members.length})
+                          {labels.groupLabels.profesores} ({members.length})
                         </h3>
                       </div>
 
@@ -442,7 +445,7 @@ export default function EquipoPage() {
                       </div>
                     </section>
                   )
-                })}
+                })()}
               </section>
             )}
 

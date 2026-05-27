@@ -24,6 +24,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# local npm cache used by this repo
+.npm-cache
+
 # local env files
 .env*.local
 .env
