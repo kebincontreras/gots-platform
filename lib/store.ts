@@ -1089,6 +1089,20 @@ export async function listTeamMembers(): Promise<
     const sql = getPgSql()
     if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
     await ensurePgSchema()
+
+    // Ensure admins are always visible as members (and Kebin has a default category).
+    const adminEmails = getGroupAdminEmails()
+    if (adminEmails.length) {
+      await sql`UPDATE users SET group_member = TRUE WHERE email = ANY(${adminEmails}::text[])`
+      const kebin = adminDefaultMemberCategory("kebinandrescontreras@gmail.com")
+      if (kebin) {
+        await sql`UPDATE users SET
+          member_category = COALESCE(member_category, ${kebin.memberCategory}),
+          academic_level = COALESCE(academic_level, ${kebin.academicLevel})
+          WHERE email = ${"kebinandrescontreras@gmail.com"}`
+      }
+    }
+
     const rows = (await sql`SELECT id, name, display_name, public_email, photo_url, academic_level, member_category, researchgate_url, scholar_url, linkedin_url, role
       FROM users WHERE group_member = TRUE ORDER BY role = 'PROFESSOR' DESC, name ASC`) as any[]
     return rows.map((r) => ({
@@ -1107,6 +1121,20 @@ export async function listTeamMembers(): Promise<
   }
 
   const db = getSqliteDb()
+  const adminEmails = getGroupAdminEmails()
+  if (adminEmails.length) {
+    const placeholders = adminEmails.map(() => "?").join(",")
+    db.prepare(`UPDATE users SET group_member = 1 WHERE lower(email) IN (${placeholders})`).run(...adminEmails)
+    const kebin = adminDefaultMemberCategory("kebinandrescontreras@gmail.com")
+    if (kebin) {
+      db.prepare(
+        `UPDATE users SET
+          member_category = COALESCE(member_category, ?),
+          academic_level = COALESCE(academic_level, ?)
+        WHERE lower(email) = ?`,
+      ).run(kebin.memberCategory, kebin.academicLevel, "kebinandrescontreras@gmail.com")
+    }
+  }
   const rows = db
     .prepare(
       `SELECT id, name, display_name, public_email, photo_url, academic_level, member_category, researchgate_url, scholar_url, linkedin_url, role
