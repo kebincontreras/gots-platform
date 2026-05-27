@@ -29,6 +29,16 @@ const ACADEMIC_LEVELS = [
   { value: "ADMINISTRATIVO", label: "Administrativo" },
 ]
 
+const MEMBER_CATEGORIES = [
+  { value: NONE_VALUE, label: "No especificar" },
+  { value: "Estudiante de doctorado", label: "Estudiante de doctorado" },
+  { value: "Estudiante de maestría", label: "Estudiante de maestría" },
+  { value: "Estudiante de pregrado", label: "Estudiante de pregrado" },
+  { value: "Estudiante de física", label: "Estudiante de física" },
+  { value: "Profesional invitado", label: "Profesional invitado" },
+  { value: "Administrativo", label: "Administrativo" },
+]
+
 export function ProfileForm({ initial, professors }: { initial: ProfileDraft; professors: ProfessorOption[] }) {
   const [draft, setDraft] = useState<ProfileDraft>(initial)
   const [saving, setSaving] = useState(false)
@@ -142,11 +152,21 @@ export function ProfileForm({ initial, professors }: { initial: ProfileDraft; pr
 
         <div className="grid gap-1">
           <div className="text-sm font-medium">Categoría (para Equipo)</div>
-          <Input
-            value={draft.memberCategory ?? ""}
-            onChange={(e) => set("memberCategory")(e.target.value)}
-            placeholder="Ej: Estudiante de doctorado"
-          />
+          <Select
+            value={draft.memberCategory ?? NONE_VALUE}
+            onValueChange={(v) => setDraft((d) => ({ ...d, memberCategory: v === NONE_VALUE ? null : v }))}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Selecciona" />
+            </SelectTrigger>
+            <SelectContent>
+              {MEMBER_CATEGORIES.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
