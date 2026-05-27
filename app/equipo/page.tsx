@@ -341,14 +341,41 @@ export default function EquipoPage() {
     const keyFor = (m: TeamMember) => {
       // Prefer name-based key to avoid duplicates between legacy JSON and DB list (DB doesn't expose email).
       const name = normalize(`${m.nombre} ${m.apellido || ""}`.trim())
+      if (name.includes("RAFAEL") && name.includes("TORRES")) return "name:RAFAEL TORRES"
       return `name:${name}`
     }
 
+    const merge = (base: TeamMember, extra: TeamMember): TeamMember => {
+      const basePhoto = getPhotoForMember(base)
+      const extraPhoto = getPhotoForMember(extra)
+      return {
+        ...base,
+        apellido: base.apellido || extra.apellido || null,
+        displayName: base.displayName || extra.displayName || null,
+        publicEmail: base.publicEmail || extra.publicEmail || null,
+        email: base.email || extra.email || null,
+        scholar: base.scholar || extra.scholar || null,
+        researchgate: base.researchgate || extra.researchgate || null,
+        linkedin: base.linkedin || extra.linkedin || null,
+        photoUrl:
+          base.photoUrl ||
+          extra.photoUrl ||
+          (basePhoto === "/placeholder-user.jpg" && extraPhoto !== "/placeholder-user.jpg" ? extraPhoto : base.photoUrl) ||
+          null,
+        memberCategory: base.memberCategory || extra.memberCategory || null,
+        academicLevel: base.academicLevel || extra.academicLevel || null,
+        role: base.role || extra.role || null,
+      }
+    }
+
     // Prefer DB members, then fill missing professors from legacy list
-    for (const m of groupMembers) byKey.set(keyFor(m), m)
+    for (const m of groupMembers) {
+      const k = keyFor(m)
+      byKey.set(k, byKey.has(k) ? merge(byKey.get(k)!, m) : m)
+    }
     for (const m of legacyMembers) {
       const k = keyFor(m)
-      if (!byKey.has(k)) byKey.set(k, m)
+      byKey.set(k, byKey.has(k) ? merge(byKey.get(k)!, m) : m)
     }
     return Array.from(byKey.values())
   }, [groupMembers, legacyMembers])

@@ -117,13 +117,13 @@ export function ChatDock() {
       {!open ? (
         <Button onClick={() => setOpen(true)} className="shadow-lg" aria-label="Abrir chat">
           <MessagesSquare className="h-4 w-4 mr-2" />
-          GOTS mensajes
+          Gost
         </Button>
       ) : (
         <div className="w-[360px] max-w-[92vw] h-[520px] rounded-xl border bg-background shadow-xl overflow-hidden flex flex-col">
           <div className="px-3 py-2 border-b flex items-center justify-between">
             <div className="font-medium text-sm">
-              {mode === "dm" && recipient ? `Chat con ${recipient.displayName || recipient.name}` : "GOTS mensajes (global)"}
+              {mode === "dm" && recipient ? `Chat con ${recipient.displayName || recipient.name}` : "Gost (para todos)"}
             </div>
             <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Cerrar">
               <X className="h-4 w-4" />

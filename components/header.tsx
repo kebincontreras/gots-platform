@@ -166,11 +166,6 @@ export function Header() {
                         <DropdownMenuItem asChild>
                           <a href="/dashboard?tab=seguridad">Seguridad</a>
                         </DropdownMenuItem>
-                        {isGroupMember ? (
-                          <DropdownMenuItem asChild>
-                            <a href="/dashboard?tab=chat">Chat</a>
-                          </DropdownMenuItem>
-                        ) : null}
                       </>
                     )}
 
@@ -309,15 +304,6 @@ export function Header() {
                     >
                       Seguridad
                     </a>
-                    {isGroupMember ? (
-                      <a
-                        href="/dashboard?tab=chat"
-                        className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        Chat
-                      </a>
-                    ) : null}
                   </>
                 )}
 
