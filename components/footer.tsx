@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Instagram, Github } from "lucide-react"
+import { Instagram } from "lucide-react"
 import { getImagePath } from "@/lib/utils"
 import { useLanguage } from "@/components/language-provider"
 
@@ -83,15 +83,6 @@ export function Footer() {
                   aria-label="Instagram"
                 >
                   <Instagram className="h-5 w-5" />
-                </a>
-                <a
-                  href="https://github.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-primary-foreground/10 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
-                  aria-label="GitHub"
-                >
-                  <Github className="h-5 w-5" />
                 </a>
               </div>
             </div>

@@ -29,16 +29,18 @@ export function NotificationsBell({ solid }: { solid: boolean }) {
   const [unread, setUnread] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
-  const load = async () => {
+  const load = async (): Promise<{ unread: number }> => {
     setError(null)
     const res = await fetch("/api/notifications?limit=15")
     const body = await res.json().catch(() => ({}))
     if (!res.ok) {
       setError(body?.error ?? "Error")
-      return
+      return { unread: 0 }
     }
     setItems(body.notifications ?? [])
-    setUnread(Number(body.unread ?? 0))
+    const u = Number(body.unread ?? 0)
+    setUnread(u)
+    return { unread: u }
   }
 
   useEffect(() => {
@@ -57,7 +59,12 @@ export function NotificationsBell({ solid }: { solid: boolean }) {
   }
 
   const onOpenChange = async (open: boolean) => {
-    if (open) await load()
+    if (open) {
+      const { unread: u } = await load()
+      if (u > 0) {
+        await markAllRead()
+      }
+    }
   }
 
   const resolveMembership = async (input: { notificationId: string; requestId: string; userId: string; action: "approve" | "reject" }) => {

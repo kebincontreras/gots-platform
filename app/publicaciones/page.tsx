@@ -9,6 +9,7 @@ import { Header } from "@/components/header"
 import { ExternalLink, Download } from "lucide-react"
 import { getImagePath, getPagePath } from "@/lib/utils"
 import { type Language, useLanguage } from "@/components/language-provider"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface Publication {
   id: number
@@ -32,6 +33,7 @@ export default function PublicationsPage() {
   const [loading, setLoading] = useState(true)
   const [yearFilter, setYearFilter] = useState<string>("all")
   const [conferenceFilter, setConferenceFilter] = useState<string>("all")
+  const [selectedId, setSelectedId] = useState<number | null>(null)
   const labels: Record<Language, Record<string, string>> = {
     es: {
       title: "Todas las Publicaciones",
@@ -218,116 +220,99 @@ export default function PublicationsPage() {
       <div className="py-16">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="space-y-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredPublications.map((pub: Publication) => (
-                <Card 
-                  key={pub.id} 
-                  className={`overflow-hidden hover:shadow-lg transition-shadow ${
-                    pub.starred ? 'ring-2 ring-accent/20 bg-accent/5' : ''
+                <Card
+                  key={pub.id}
+                  className={`overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${
+                    pub.starred ? "ring-2 ring-accent/20 bg-accent/5" : ""
                   }`}
+                  onClick={() => setSelectedId(pub.id)}
                 >
-                  <div className="flex flex-col md:flex-row">
-                    {/* Imagen solo para publicaciones destacadas */}
-                    {pub.starred && pub.image && (
-                      <div className="md:w-80 aspect-video md:aspect-square relative overflow-hidden bg-muted">
-                        <img
-                          src={getImagePath(pub.image)}
-                          alt={pub.title}
-                          loading="lazy"
-                          className="object-cover w-full h-full"
-                        />
-                        {pub.starred && (
-                          <div className="absolute top-3 left-3 bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs font-medium">
-                            {l.featured}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* Contenido */}
-                    <div className="flex-1 p-6">
-                      <div className="flex flex-col h-full">
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="text-sm text-muted-foreground flex items-center gap-2">
-                              <span className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
-                                {pub.conference || l.noConference}
-                              </span>
-                              <span>{pub.year}</span>
-                              {pub.starred && !pub.image && (
-                                <span className="bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs">
-                                  {l.featured}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <h3 className="text-xl font-serif font-bold mb-3 leading-tight">
-                            <a 
-                              href={getPagePath(`/publicaciones/${pub.id}`)}
-                              className="hover:text-accent transition-colors cursor-pointer"
-                            >
-                              {pub.title}
-                            </a>
-                          </h3>
-                          
-                          <div className="space-y-2 mb-4">
-                            <AuthorsList 
-                              authors={pub.authors} 
-                              maxVisible={3}
-                              className="mb-2"
-                            />
-                            <p className="text-sm italic text-muted-foreground">
-                              {(pub.journal || l.noJournal)}, {pub.year}
-                            </p>
-                          </div>
-
-                          <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                            {pub.abstract}
-                          </p>
-
-                          <div className="flex flex-wrap gap-1 mb-4">
-                            {pub.keywords.slice(0, 4).map((keyword, index) => (
-                              <span 
-                                key={index}
-                                className="bg-muted text-muted-foreground px-2 py-1 rounded text-xs"
-                              >
-                                {keyword}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Botones */}
-                        <div className="flex gap-3 pt-4">
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className="bg-accent text-accent-foreground hover:bg-accent/90"
-                            asChild
-                          >
-                            <a href={pub.pdfUrl} target="_blank" rel="noopener noreferrer">
-                              <Download className="h-4 w-4 mr-2" />
-                              PDF
-                            </a>
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            asChild
-                          >
-                            <a href={pub.externalUrl} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-4 w-4 mr-2" />
-                              {l.viewMore}
-                            </a>
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="aspect-[4/3] bg-muted overflow-hidden">
+                    <img
+                      src={getImagePath(pub.image || "/placeholder.svg")}
+                      alt={pub.title}
+                      loading="lazy"
+                      className="object-cover w-full h-full"
+                    />
                   </div>
+                  <CardHeader className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
+                        {pub.conference || l.noConference}
+                      </span>
+                      <span>{pub.year}</span>
+                      {pub.starred ? (
+                        <span className="bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs">
+                          {l.featured}
+                        </span>
+                      ) : null}
+                    </div>
+                    <CardTitle className="text-base leading-tight line-clamp-3">{pub.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="text-xs italic text-muted-foreground line-clamp-2">
+                      {(pub.journal || l.noJournal)}, {pub.year}
+                    </div>
+                  </CardContent>
                 </Card>
               ))}
             </div>
+
+            <Dialog open={selectedId !== null} onOpenChange={(open) => !open && setSelectedId(null)}>
+              {selectedId !== null && (() => {
+                const pub = filteredPublications.find((p) => p.id === selectedId) || publications.find((p) => p.id === selectedId)
+                if (!pub) return null
+                return (
+                  <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                      <DialogTitle>{pub.title}</DialogTitle>
+                      <DialogDescription>
+                        {(pub.journal || l.noJournal)} · {pub.year} · {pub.conference || l.noConference}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4">
+                      <div className="w-full rounded-lg overflow-hidden bg-muted border">
+                        <img
+                          src={getImagePath(pub.image || "/placeholder.svg")}
+                          alt={pub.title}
+                          className="w-full h-auto object-cover"
+                        />
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        <AuthorsList authors={pub.authors} maxVisible={99} />
+                      </div>
+                      <div className="text-sm whitespace-pre-line">{pub.abstract}</div>
+                      <div className="flex flex-wrap gap-2">
+                        {pub.keywords.slice(0, 12).map((k) => (
+                          <span key={k} className="bg-muted text-muted-foreground px-2 py-1 rounded text-xs">
+                            {k}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex gap-3 pt-2">
+                        <Button className="bg-accent text-accent-foreground hover:bg-accent/90" asChild>
+                          <a href={pub.pdfUrl} target="_blank" rel="noopener noreferrer">
+                            <Download className="h-4 w-4 mr-2" />
+                            PDF
+                          </a>
+                        </Button>
+                        <Button variant="outline" asChild>
+                          <a href={pub.externalUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            {l.viewMore}
+                          </a>
+                        </Button>
+                        <Button variant="ghost" asChild>
+                          <a href={getPagePath(`/publicaciones/${pub.id}`)}>Ver página</a>
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                )
+              })()}
+            </Dialog>
 
             {filteredPublications.length === 0 && (
               <div className="text-center py-16">

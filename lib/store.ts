@@ -125,6 +125,31 @@ function safeJsonParse(value: unknown): Record<string, any> | null {
   }
 }
 
+function getGroupAdminEmails(): string[] {
+  const raw =
+    process.env.GROUP_ADMIN_EMAILS ||
+    // Default as requested
+    "kebinandrescontreras@gmail.com,rafael.torres@saber.uis.edu.co"
+  return raw
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+}
+
+function isGroupAdminEmail(email: string | null | undefined) {
+  const normalized = (email ?? "").trim().toLowerCase()
+  if (!normalized) return false
+  return getGroupAdminEmails().includes(normalized)
+}
+
+function adminDefaultMemberCategory(email: string) {
+  const normalized = email.trim().toLowerCase()
+  if (normalized === "kebinandrescontreras@gmail.com") {
+    return { memberCategory: "Estudiante de doctorado", academicLevel: "DOCTORADO" }
+  }
+  return null
+}
+
 function ensureDirExists(dirPath: string) {
   fs.mkdirSync(dirPath, { recursive: true })
 }
@@ -514,7 +539,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 
     const row = rows[0]
     if (!row) return null
-    return {
+    const user: User = {
       id: row.id,
       email: row.email,
       name: row.name,
@@ -536,6 +561,23 @@ export async function getUserByEmail(email: string): Promise<User | null> {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }
+
+    // Bootstrap admins: ensure they are group members and have defaults.
+    if (isGroupAdminEmail(user.email) && !user.groupMember) {
+      await setUserGroupMember(user.id, true).catch(() => {})
+      user.groupMember = true
+    }
+    const defaults = adminDefaultMemberCategory(user.email)
+    if (defaults && (!user.memberCategory || !user.academicLevel)) {
+      await updateUserProfile(user.id, {
+        memberCategory: user.memberCategory ?? defaults.memberCategory,
+        academicLevel: user.academicLevel ?? defaults.academicLevel,
+      }).catch(() => {})
+      user.memberCategory = user.memberCategory ?? defaults.memberCategory
+      user.academicLevel = user.academicLevel ?? defaults.academicLevel
+    }
+
+    return user
   }
 
   const db = getSqliteDb()
@@ -548,7 +590,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     )
     .get(email) as any
   if (!row) return null
-  return {
+  const user: User = {
     id: row.id,
     email: row.email,
     name: row.name,
@@ -570,6 +612,22 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
+
+  if (isGroupAdminEmail(user.email) && !user.groupMember) {
+    await setUserGroupMember(user.id, true).catch(() => {})
+    user.groupMember = true
+  }
+  const defaults = adminDefaultMemberCategory(user.email)
+  if (defaults && (!user.memberCategory || !user.academicLevel)) {
+    await updateUserProfile(user.id, {
+      memberCategory: user.memberCategory ?? defaults.memberCategory,
+      academicLevel: user.academicLevel ?? defaults.academicLevel,
+    }).catch(() => {})
+    user.memberCategory = user.memberCategory ?? defaults.memberCategory
+    user.academicLevel = user.academicLevel ?? defaults.academicLevel
+  }
+
+  return user
 }
 
 export async function getUserById(id: string): Promise<User | null> {
@@ -608,7 +666,7 @@ export async function getUserById(id: string): Promise<User | null> {
 
     const row = rows[0]
     if (!row) return null
-    return {
+    const user: User = {
       id: row.id,
       email: row.email,
       name: row.name,
@@ -630,6 +688,22 @@ export async function getUserById(id: string): Promise<User | null> {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }
+
+    if (isGroupAdminEmail(user.email) && !user.groupMember) {
+      await setUserGroupMember(user.id, true).catch(() => {})
+      user.groupMember = true
+    }
+    const defaults = adminDefaultMemberCategory(user.email)
+    if (defaults && (!user.memberCategory || !user.academicLevel)) {
+      await updateUserProfile(user.id, {
+        memberCategory: user.memberCategory ?? defaults.memberCategory,
+        academicLevel: user.academicLevel ?? defaults.academicLevel,
+      }).catch(() => {})
+      user.memberCategory = user.memberCategory ?? defaults.memberCategory
+      user.academicLevel = user.academicLevel ?? defaults.academicLevel
+    }
+
+    return user
   }
 
   const db = getSqliteDb()
@@ -642,7 +716,7 @@ export async function getUserById(id: string): Promise<User | null> {
     )
     .get(id) as any
   if (!row) return null
-  return {
+  const user: User = {
     id: row.id,
     email: row.email,
     name: row.name,
@@ -664,6 +738,22 @@ export async function getUserById(id: string): Promise<User | null> {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
+
+  if (isGroupAdminEmail(user.email) && !user.groupMember) {
+    await setUserGroupMember(user.id, true).catch(() => {})
+    user.groupMember = true
+  }
+  const defaults = adminDefaultMemberCategory(user.email)
+  if (defaults && (!user.memberCategory || !user.academicLevel)) {
+    await updateUserProfile(user.id, {
+      memberCategory: user.memberCategory ?? defaults.memberCategory,
+      academicLevel: user.academicLevel ?? defaults.academicLevel,
+    }).catch(() => {})
+    user.memberCategory = user.memberCategory ?? defaults.memberCategory
+    user.academicLevel = user.academicLevel ?? defaults.academicLevel
+  }
+
+  return user
 }
 
 export async function createUser(input: {

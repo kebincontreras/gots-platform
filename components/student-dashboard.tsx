@@ -12,6 +12,8 @@ import { GroupChat } from "@/components/group-chat"
 import { SecurityForm } from "@/components/security-form"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { useSearchParams } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { MoreVertical } from "lucide-react"
 
 export function StudentDashboard({
   userId,
@@ -40,6 +42,7 @@ export function StudentDashboard({
   const advancesLabel = useMemo(() => (hasAdvances ? "Avances" : "Avances (sin enlaces)"), [hasAdvances])
   const [active, setActive] = useState<"perfil" | "seguridad" | "avances" | "calendario" | "chat">("perfil")
   const params = useSearchParams()
+  const [showLinksEditor, setShowLinksEditor] = useState(!hasAdvances)
 
   // Allow deep-links like /dashboard?tab=avances
   const tabParam = (params.get("tab") ?? "").toLowerCase()
@@ -55,6 +58,10 @@ export function StudentDashboard({
       setActive(tabParam as any)
     }
   }, [allowedTabs, tabParam, groupMember])
+
+  useEffect(() => {
+    if (!hasAdvances) setShowLinksEditor(true)
+  }, [hasAdvances])
 
   return (
     <main className="min-h-screen">
@@ -98,15 +105,26 @@ export function StudentDashboard({
                       Aquí se muestran tu PPT y tu Doc (si los has agregado).
                     </p>
                   </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Editar enlaces"
+                    onClick={() => setShowLinksEditor((v) => !v)}
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
                 </div>
                 <div className="mt-4 grid gap-6">
-                  <div className="rounded-lg border p-4">
-                    <div className="font-medium">{t("dashboard.linksTitle")}</div>
-                    <div className="text-sm text-muted-foreground mt-1">{t("dashboard.linksDesc")}</div>
-                    <div className="mt-3">
-                      <LinksForm initialPptUrl={driveEmbedUrl ?? ""} initialDocUrl={docEmbedUrl ?? ""} />
+                  {showLinksEditor ? (
+                    <div className="rounded-lg border p-4">
+                      <div className="font-medium">{t("dashboard.linksTitle")}</div>
+                      <div className="text-sm text-muted-foreground mt-1">{t("dashboard.linksDesc")}</div>
+                      <div className="mt-3">
+                        <LinksForm initialPptUrl={driveEmbedUrl ?? ""} initialDocUrl={docEmbedUrl ?? ""} />
+                      </div>
                     </div>
-                  </div>
+                  ) : null}
 
                   {driveEmbedUrl ? (
                     <div className="rounded-xl border overflow-hidden">
