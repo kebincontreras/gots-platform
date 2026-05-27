@@ -160,7 +160,8 @@ function getMemberProfileLinks(member: TeamMember) {
 
 export default function EquipoPage() {
   const { language } = useLanguage()
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+  const [groupMembers, setGroupMembers] = useState<TeamMember[]>([])
+  const [legacyMembers, setLegacyMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null)
   const ui: Record<Language, { teamTitle: string; loading: string; groupLabels: Record<GroupKey, string>; mailAria: string }> = {
@@ -206,40 +207,46 @@ export default function EquipoPage() {
   useEffect(() => {
     const loadTeam = async () => {
       try {
+        // Keep existing team list (equipo.json)
+        const legacyRes = await fetch(getImagePath("/equipo.json"))
+        const legacyData = await legacyRes.json().catch(() => ({}))
+        const legacyActive = Array.isArray(legacyData?.team)
+          ? (legacyData.team as TeamMember[]).filter((member) => member.activo)
+          : []
+        setLegacyMembers(legacyActive)
+
+        // Additionally, load accepted members from DB (if available)
         const apiRes = await fetch("/api/team")
-        if (apiRes.ok) {
-          const apiBody = await apiRes.json().catch(() => ({}))
-          const apiTeam = Array.isArray(apiBody?.team) ? apiBody.team : []
-          const mapped: TeamMember[] = apiTeam.map((m: any, idx: number) => {
-            const full = String(m.displayName || m.name || "").trim() || "Miembro"
-            const parts = full.split(/\s+/)
-            const first = parts[0] ?? full
-            const last = parts.slice(1).join(" ") || null
-            return {
-              id: idx + 100000,
-              nombre: first,
-              apellido: last,
-              email: m.publicEmail ?? null,
-              scholar: m.scholarUrl ?? null,
-              linkedin: m.linkedinUrl ?? null,
-              researchgate: m.researchgateUrl ?? null,
-              activo: true,
-              photoUrl: m.photoUrl ?? null,
-              displayName: m.displayName ?? null,
-              publicEmail: m.publicEmail ?? null,
-              academicLevel: m.academicLevel ?? null,
-              memberCategory: m.memberCategory ?? null,
-              role: m.role ?? null,
-            }
-          })
-          setTeamMembers(mapped)
+        if (!apiRes.ok) {
+          setGroupMembers([])
           return
         }
 
-        const response = await fetch(getImagePath("/equipo.json"))
-        const data = await response.json()
-        const active = (data.team as TeamMember[]).filter((member) => member.activo)
-        setTeamMembers(active)
+        const apiBody = await apiRes.json().catch(() => ({}))
+        const apiTeam = Array.isArray(apiBody?.team) ? apiBody.team : []
+        const mapped: TeamMember[] = apiTeam.map((m: any, idx: number) => {
+          const full = String(m.displayName || m.name || "").trim() || "Miembro"
+          const parts = full.split(/\s+/)
+          const first = parts[0] ?? full
+          const last = parts.slice(1).join(" ") || null
+          return {
+            id: idx + 100000,
+            nombre: first,
+            apellido: last,
+            email: m.publicEmail ?? null,
+            scholar: m.scholarUrl ?? null,
+            linkedin: m.linkedinUrl ?? null,
+            researchgate: m.researchgateUrl ?? null,
+            activo: true,
+            photoUrl: m.photoUrl ?? null,
+            displayName: m.displayName ?? null,
+            publicEmail: m.publicEmail ?? null,
+            academicLevel: m.academicLevel ?? null,
+            memberCategory: m.memberCategory ?? null,
+            role: m.role ?? null,
+          }
+        })
+        setGroupMembers(mapped)
       } catch (error) {
         console.error("Error loading team:", error)
       } finally {
@@ -250,7 +257,7 @@ export default function EquipoPage() {
     loadTeam()
   }, [])
 
-  const grouped = useMemo(() => {
+  const groupBucketsFor = (members: TeamMember[]) => {
     const buckets: Record<GroupKey, TeamMember[]> = {
       profesores: [],
       doctorado: [],
@@ -259,7 +266,7 @@ export default function EquipoPage() {
       otros: [],
     }
 
-    for (const member of teamMembers) {
+    for (const member of members) {
       buckets[getGroup(getProgram(member))].push(member)
     }
 
@@ -292,7 +299,10 @@ export default function EquipoPage() {
     }
 
     return buckets
-  }, [teamMembers])
+  }
+
+  const groupedGroupMembers = useMemo(() => groupBucketsFor(groupMembers), [groupMembers])
+  const groupedLegacyMembers = useMemo(() => groupBucketsFor(legacyMembers), [legacyMembers])
 
   return (
     <div className="min-h-screen bg-background">
@@ -313,53 +323,128 @@ export default function EquipoPage() {
               <div className="text-center text-muted-foreground">{labels.loading}</div>
             )}
 
-            {!loading && GROUP_ORDER.map((group) => {
-              const members = grouped[group]
-              if (members.length === 0) return null
-
-              return (
-                <section key={group} className="rounded-xl border border-border bg-card overflow-hidden">
-                  <div className="px-6 py-4 border-b bg-secondary/60">
-                    <h2 className="text-2xl font-serif font-bold">
-                      {labels.groupLabels[group]} ({members.length})
-                    </h2>
+            {!loading && groupMembers.length > 0 ? (
+              <section className="space-y-6">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-serif font-bold">Miembros aceptados</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Personas que solicitaron ingreso y fueron aprobadas.
+                    </p>
                   </div>
+                  <div className="text-sm text-muted-foreground">Total: {groupMembers.length}</div>
+                </div>
 
-                  <div className="p-6 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {members.map((member) => {
-                      const fullName = `${member.nombre} ${member.apellido || ""}`.trim()
-                      const imagePath = getPhotoForMember(member)
-                      return (
-                        <article
-                          key={member.id}
-                          className="rounded-xl border border-border bg-background overflow-hidden shadow-sm hover:shadow-lg transition-shadow cursor-pointer"
-                          onClick={() => setSelectedMember(member)}
-                        >
-                          <div className="aspect-[4/3] bg-muted overflow-hidden">
-                            <img
-                              src={getImagePath(imagePath)}
-                              alt={fullName}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement
-                                target.src = getImagePath("/placeholder-user.jpg")
-                              }}
-                            />
-                          </div>
-                          <div className="p-4 space-y-2">
-                            <h3 className="font-semibold leading-tight">{fullName}</h3>
-                            <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                              {getProgram(member)}
-                            </div>
-                          </div>
-                        </article>
-                      )
-                    })}
+                {GROUP_ORDER.map((group) => {
+                  const members = groupedGroupMembers[group]
+                  if (members.length === 0) return null
+                  return (
+                    <section key={`accepted-${group}`} className="rounded-xl border border-border bg-card overflow-hidden">
+                      <div className="px-6 py-4 border-b bg-secondary/60">
+                        <h3 className="text-2xl font-serif font-bold">
+                          {labels.groupLabels[group]} ({members.length})
+                        </h3>
+                      </div>
+
+                      <div className="p-6 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {members.map((member) => {
+                          const fullName = `${member.nombre} ${member.apellido || ""}`.trim()
+                          const imagePath = getPhotoForMember(member)
+                          return (
+                            <article
+                              key={member.id}
+                              className="rounded-xl border border-border bg-background overflow-hidden shadow-sm hover:shadow-lg transition-shadow cursor-pointer"
+                              onClick={() => setSelectedMember(member)}
+                            >
+                              <div className="aspect-[4/3] bg-muted overflow-hidden">
+                                <img
+                                  src={getImagePath(imagePath)}
+                                  alt={fullName}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement
+                                    target.src = getImagePath("/placeholder-user.jpg")
+                                  }}
+                                />
+                              </div>
+                              <div className="p-4 space-y-2">
+                                <h3 className="font-semibold leading-tight">{fullName}</h3>
+                                <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                                  {getProgram(member)}
+                                </div>
+                              </div>
+                            </article>
+                          )
+                        })}
+                      </div>
+                    </section>
+                  )
+                })}
+              </section>
+            ) : null}
+
+            {!loading && (
+              <section className="space-y-6">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-serif font-bold">Equipo (histórico)</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Lista original del sitio (se mantiene).
+                    </p>
                   </div>
-                </section>
-              )
-            })}
+                  <div className="text-sm text-muted-foreground">Total: {legacyMembers.length}</div>
+                </div>
+
+                {GROUP_ORDER.map((group) => {
+                  const members = groupedLegacyMembers[group]
+                  if (members.length === 0) return null
+
+                  return (
+                    <section key={group} className="rounded-xl border border-border bg-card overflow-hidden">
+                      <div className="px-6 py-4 border-b bg-secondary/60">
+                        <h3 className="text-2xl font-serif font-bold">
+                          {labels.groupLabels[group]} ({members.length})
+                        </h3>
+                      </div>
+
+                      <div className="p-6 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {members.map((member) => {
+                          const fullName = `${member.nombre} ${member.apellido || ""}`.trim()
+                          const imagePath = getPhotoForMember(member)
+                          return (
+                            <article
+                              key={member.id}
+                              className="rounded-xl border border-border bg-background overflow-hidden shadow-sm hover:shadow-lg transition-shadow cursor-pointer"
+                              onClick={() => setSelectedMember(member)}
+                            >
+                              <div className="aspect-[4/3] bg-muted overflow-hidden">
+                                <img
+                                  src={getImagePath(imagePath)}
+                                  alt={fullName}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement
+                                    target.src = getImagePath("/placeholder-user.jpg")
+                                  }}
+                                />
+                              </div>
+                              <div className="p-4 space-y-2">
+                                <h3 className="font-semibold leading-tight">{fullName}</h3>
+                                <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                                  {getProgram(member)}
+                                </div>
+                              </div>
+                            </article>
+                          )
+                        })}
+                      </div>
+                    </section>
+                  )
+                })}
+              </section>
+            )}
 
             <Dialog open={selectedMember !== null} onOpenChange={(open) => !open && setSelectedMember(null)}>
               {selectedMember && (
