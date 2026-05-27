@@ -18,6 +18,7 @@
     "export": "STATIC_EXPORT=1 NEXT_PUBLIC_BASE_PATH=/GOTS.github.io next build && next export",
     "lint": "eslint .",
     "create-professor": "node scripts/create-professor.js",
+    "create-demo-user": "node scripts/create-demo-user.js",
     "set-role": "node scripts/set-role.js",
     "seed-users": "node scripts/seed-users-from-equipo.js"
   },
