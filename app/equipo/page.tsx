@@ -327,8 +327,25 @@ export default function EquipoPage() {
     return buckets
   }
 
-  const groupedGroupMembers = useMemo(() => groupBucketsFor(groupMembers), [groupMembers])
-  const groupedLegacyMembers = useMemo(() => groupBucketsFor(legacyMembers), [legacyMembers])
+  const combinedMembers = useMemo(() => {
+    const byKey = new Map<string, TeamMember>()
+    const keyFor = (m: TeamMember) => {
+      const email = (m.publicEmail || m.email || "").trim().toLowerCase()
+      if (email) return `email:${email}`
+      const name = normalize(`${m.nombre} ${m.apellido || ""}`.trim())
+      return `name:${name}`
+    }
+
+    // Prefer DB members, then fill missing professors from legacy list
+    for (const m of groupMembers) byKey.set(keyFor(m), m)
+    for (const m of legacyMembers) {
+      const k = keyFor(m)
+      if (!byKey.has(k)) byKey.set(k, m)
+    }
+    return Array.from(byKey.values())
+  }, [groupMembers, legacyMembers])
+
+  const groupedCombinedMembers = useMemo(() => groupBucketsFor(combinedMembers), [combinedMembers])
 
   return (
     <div className="min-h-screen bg-background">
@@ -349,23 +366,18 @@ export default function EquipoPage() {
               <div className="text-center text-muted-foreground">{labels.loading}</div>
             )}
 
-            {!loading && groupMembers.length > 0 ? (
+            {!loading ? (
               <section className="space-y-6">
                 <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <h2 className="text-2xl font-serif font-bold">Miembros aceptados</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Personas que solicitaron ingreso y fueron aprobadas.
-                    </p>
-                  </div>
-                  <div className="text-sm text-muted-foreground">Total: {groupMembers.length}</div>
+                  <div />
+                  <div className="text-sm text-muted-foreground">Total: {combinedMembers.length}</div>
                 </div>
 
                 {GROUP_ORDER.map((group) => {
-                  const members = groupedGroupMembers[group]
+                  const members = groupedCombinedMembers[group]
                   if (members.length === 0) return null
                   return (
-                    <section key={`accepted-${group}`} className="rounded-xl border border-border bg-card overflow-hidden">
+                    <section key={`group-${group}`} className="rounded-xl border border-border bg-card overflow-hidden">
                       <div className="px-6 py-4 border-b bg-secondary/60">
                         <h3 className="text-2xl font-serif font-bold">
                           {labels.groupLabels[group]} ({members.length})
@@ -409,68 +421,6 @@ export default function EquipoPage() {
                 })}
               </section>
             ) : null}
-
-            {!loading && (
-              <section className="space-y-6">
-                <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <h2 className="text-2xl font-serif font-bold">Profesores (histórico)</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Lista original del sitio (solo profesores).
-                    </p>
-                  </div>
-                  <div className="text-sm text-muted-foreground">Total: {legacyMembers.length}</div>
-                </div>
-
-                {(() => {
-                  const members = groupedLegacyMembers.profesores
-                  if (members.length === 0) return null
-
-                  return (
-                    <section key="legacy-profesores" className="rounded-xl border border-border bg-card overflow-hidden">
-                      <div className="px-6 py-4 border-b bg-secondary/60">
-                        <h3 className="text-2xl font-serif font-bold">
-                          {labels.groupLabels.profesores} ({members.length})
-                        </h3>
-                      </div>
-
-                      <div className="p-6 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {members.map((member) => {
-                          const fullName = `${member.nombre} ${member.apellido || ""}`.trim()
-                          const imagePath = getPhotoForMember(member)
-                          return (
-                            <article
-                              key={member.id}
-                              className="rounded-xl border border-border bg-background overflow-hidden shadow-sm hover:shadow-lg transition-shadow cursor-pointer"
-                              onClick={() => setSelectedMember(member)}
-                            >
-                              <div className="aspect-[4/3] bg-muted overflow-hidden">
-                                <img
-                                  src={getImagePath(imagePath)}
-                                  alt={fullName}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement
-                                    target.src = getImagePath("/placeholder-user.jpg")
-                                  }}
-                                />
-                              </div>
-                              <div className="p-4 space-y-2">
-                                <h3 className="font-semibold leading-tight">{fullName}</h3>
-                                <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                                  {getProgram(member)}
-                                </div>
-                              </div>
-                            </article>
-                          )
-                        })}
-                      </div>
-                    </section>
-                  )
-                })()}
-              </section>
-            )}
 
             <Dialog open={selectedMember !== null} onOpenChange={(open) => !open && setSelectedMember(null)}>
               {selectedMember && (

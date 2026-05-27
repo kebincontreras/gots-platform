@@ -20,6 +20,7 @@ import {
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isGroupMember, setIsGroupMember] = useState(false)
   const { data: session } = useSession()
   const { language, setLanguage, t } = useLanguage()
   const pathname = usePathname()
@@ -32,6 +33,29 @@ export function Header() {
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  useEffect(() => {
+    const role = (session?.user as any)?.role as string | undefined
+    if (!session?.user) {
+      setIsGroupMember(false)
+      return
+    }
+    if (role === "PROFESSOR") {
+      setIsGroupMember(true)
+      return
+    }
+    ;(async () => {
+      try {
+        const res = await fetch("/api/membership/request")
+        const body = await res.json().catch(() => ({}))
+        if (res.ok) {
+          setIsGroupMember(Boolean(body?.groupMember))
+        }
+      } catch {
+        // ignore
+      }
+    })()
+  }, [session?.user])
 
   const navItems = [
     { href: "/", label: t("nav.home"), isSection: false },
@@ -142,6 +166,11 @@ export function Header() {
                         <DropdownMenuItem asChild>
                           <a href="/dashboard?tab=seguridad">Seguridad</a>
                         </DropdownMenuItem>
+                        {isGroupMember ? (
+                          <DropdownMenuItem asChild>
+                            <a href="/dashboard?tab=chat">Chat</a>
+                          </DropdownMenuItem>
+                        ) : null}
                       </>
                     )}
 
@@ -280,6 +309,15 @@ export function Header() {
                     >
                       Seguridad
                     </a>
+                    {isGroupMember ? (
+                      <a
+                        href="/dashboard?tab=chat"
+                        className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Chat
+                      </a>
+                    ) : null}
                   </>
                 )}
 
