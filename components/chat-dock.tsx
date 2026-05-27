@@ -20,6 +20,9 @@ export function ChatDock() {
   const [text, setText] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [recipient, setRecipient] = useState<Member | null>(null)
+  const [mode, setMode] = useState<"global" | "dm">("global")
+  const [dmThreadId, setDmThreadId] = useState<string | null>(null)
+  const [openingDm, setOpeningDm] = useState(false)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
   const enabled = Boolean(session?.user) && (role === "PROFESSOR" || groupMember)
@@ -55,10 +58,16 @@ export function ChatDock() {
     }
   }
 
-  const loadMessages = async () => {
+  const loadMessages = async (opts?: { mode?: "global" | "dm"; threadId?: string | null }) => {
     setError(null)
     try {
-      const res = await fetch("/api/chat?limit=120")
+      const m = opts?.mode ?? mode
+      const threadId = opts?.threadId ?? dmThreadId
+      const url =
+        m === "dm" && threadId
+          ? `/api/dm/threads/${encodeURIComponent(threadId)}/messages?limit=120`
+          : "/api/chat?limit=120"
+      const res = await fetch(url)
       const body = await res.json().catch(() => ({}))
       if (!res.ok) {
         setError(body?.error ?? "No se pudo cargar el chat.")
@@ -80,14 +89,15 @@ export function ChatDock() {
     }, 5000)
     return () => window.clearInterval(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, open])
+  }, [enabled, open, mode, dmThreadId])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages.length])
 
   const sortedMembers = useMemo(() => {
-    const list = [...members]
+    const meId = String((session?.user as any)?.id ?? "")
+    const list = [...members].filter((m) => String(m.id) !== meId)
     list.sort((a, b) => {
       const ar = String(a.role || "").toUpperCase()
       const br = String(b.role || "").toUpperCase()
@@ -98,7 +108,7 @@ export function ChatDock() {
       return an.localeCompare(bn)
     })
     return list
-  }, [members])
+  }, [members, session?.user])
 
   if (!enabled) return null
 
@@ -112,7 +122,9 @@ export function ChatDock() {
       ) : (
         <div className="w-[360px] max-w-[92vw] h-[520px] rounded-xl border bg-background shadow-xl overflow-hidden flex flex-col">
           <div className="px-3 py-2 border-b flex items-center justify-between">
-            <div className="font-medium text-sm">GOTS mensajes (global)</div>
+            <div className="font-medium text-sm">
+              {mode === "dm" && recipient ? `Chat con ${recipient.displayName || recipient.name}` : "GOTS mensajes (global)"}
+            </div>
             <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Cerrar">
               <X className="h-4 w-4" />
             </Button>
@@ -137,7 +149,7 @@ export function ChatDock() {
                 </div>
               </div>
 
-              {recipient ? (
+              {mode === "dm" && recipient ? (
                 <div className="border-t px-2 py-1 text-xs flex items-center justify-between gap-2 bg-muted/30">
                   <div className="flex items-center gap-2 min-w-0">
                     <UserRound className="h-3.5 w-3.5 text-muted-foreground" />
@@ -151,7 +163,12 @@ export function ChatDock() {
                     size="icon"
                     className="h-7 w-7"
                     aria-label="Quitar destinatario"
-                    onClick={() => setRecipient(null)}
+                    onClick={() => {
+                      setRecipient(null)
+                      setMode("global")
+                      setDmThreadId(null)
+                      setOpeningDm(false)
+                    }}
                   >
                     <X className="h-3.5 w-3.5" />
                   </Button>
@@ -164,27 +181,40 @@ export function ChatDock() {
                   e.preventDefault()
                   const message = text.trim()
                   if (!message) return
-                  const finalMessage = recipient ? `@${recipient.displayName || recipient.name}: ${message}` : message
+                  if (mode === "dm" && (!recipient || !dmThreadId || openingDm)) {
+                    setError("Espera un momento: abriendo el chat privado…")
+                    return
+                  }
                   setText("")
-                  const res = await fetch("/api/chat", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message: finalMessage }),
-                  })
+                  const res =
+                    mode === "dm" && dmThreadId
+                      ? await fetch(`/api/dm/threads/${encodeURIComponent(dmThreadId)}/messages`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ message }),
+                        })
+                      : await fetch("/api/chat", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ message }),
+                        })
                   if (!res.ok) {
                     const body = await res.json().catch(() => ({}))
                     setError(body?.error ?? "No se pudo enviar.")
                     return
                   }
-                  await loadMessages()
+                  await loadMessages(mode === "dm" && dmThreadId ? { mode: "dm", threadId: dmThreadId } : { mode: "global" })
                 }}
               >
                 <Input
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder={recipient ? `Escribe a ${recipient.displayName || recipient.name}...` : "Escribe..."}
+                  placeholder={mode === "dm" && recipient ? `Escribe a ${recipient.displayName || recipient.name}...` : "Escribe..."}
+                  disabled={mode === "dm" && (openingDm || !dmThreadId)}
                 />
-                <Button type="submit">Enviar</Button>
+                <Button type="submit" disabled={mode === "dm" && (openingDm || !dmThreadId)}>
+                  Enviar
+                </Button>
               </form>
               <div className="px-2 pb-2 text-[10px] text-muted-foreground">
                 Nota: este chat se actualiza cada 5s. Para tiempo real (sin refresh) hay que integrar Ably/Pusher.
@@ -203,7 +233,38 @@ export function ChatDock() {
                       className={`text-left text-xs rounded-md border px-2 py-1 hover:bg-muted/40 ${
                         isSelected ? "border-primary bg-primary/5" : ""
                       }`}
-                      onClick={() => setRecipient(m)}
+                      onClick={async () => {
+                        setRecipient(m)
+                        setMode("dm")
+                        setDmThreadId(null)
+                        setError(null)
+                        setOpeningDm(true)
+                        try {
+                          const res = await fetch("/api/dm/threads", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ otherUserId: m.id }),
+                          })
+                          const body = await res.json().catch(() => ({}))
+                          if (!res.ok) {
+                            setError(body?.error ?? "No se pudo abrir el chat.")
+                            setMode("global")
+                            setRecipient(null)
+                            setOpeningDm(false)
+                            return
+                          }
+                          const threadId = String(body?.thread?.id ?? "")
+                          if (!threadId) throw new Error("No thread id")
+                          setDmThreadId(threadId)
+                          await loadMessages({ mode: "dm", threadId })
+                          setOpeningDm(false)
+                        } catch {
+                          setError("No se pudo abrir el chat.")
+                          setMode("global")
+                          setRecipient(null)
+                          setOpeningDm(false)
+                        }
+                      }}
                       aria-label={`Escribir a ${m.displayName || m.name}`}
                     >
                       <div className="font-medium truncate">{m.displayName || m.name}</div>

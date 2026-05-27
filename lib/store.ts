@@ -94,6 +94,22 @@ export type GroupMessage = {
   createdAt: string
 }
 
+export type DmThread = {
+  id: string
+  userA: string
+  userB: string
+  createdAt: string
+}
+
+export type DmMessage = {
+  id: string
+  threadId: string
+  senderId: string
+  senderName: string
+  message: string
+  createdAt: string
+}
+
 export type NotificationType = "MEMBERSHIP_REQUEST" | "NEWS_PUBLISHED" | "MEMBER_JOINED"
 
 export type Notification = {
@@ -290,6 +306,25 @@ async function ensurePgSchema() {
   `
 
   await sql`
+    CREATE TABLE IF NOT EXISTS dm_threads (
+      id TEXT PRIMARY KEY,
+      user_a TEXT NOT NULL,
+      user_b TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+  `
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS dm_messages (
+      id TEXT PRIMARY KEY,
+      thread_id TEXT NOT NULL,
+      sender_id TEXT NOT NULL,
+      message TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+  `
+
+  await sql`
     CREATE TABLE IF NOT EXISTS notifications (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -332,6 +367,8 @@ async function ensurePgSchema() {
   await sql`CREATE INDEX IF NOT EXISTS idx_membership_requests_user ON membership_requests(user_id);`
   await sql`CREATE INDEX IF NOT EXISTS idx_membership_requests_status ON membership_requests(status);`
   await sql`CREATE INDEX IF NOT EXISTS idx_group_messages_created ON group_messages(created_at);`
+  await sql`CREATE INDEX IF NOT EXISTS idx_dm_threads_users ON dm_threads(user_a, user_b);`
+  await sql`CREATE INDEX IF NOT EXISTS idx_dm_messages_thread_created ON dm_messages(thread_id, created_at);`
   await sql`CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications(user_id, created_at);`
   await sql`CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, read_at);`
 
@@ -440,6 +477,23 @@ function getSqliteDb() {
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_group_messages_created ON group_messages(created_at);
+
+    CREATE TABLE IF NOT EXISTS dm_threads (
+      id TEXT PRIMARY KEY,
+      user_a TEXT NOT NULL,
+      user_b TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_dm_threads_users ON dm_threads(user_a, user_b);
+
+    CREATE TABLE IF NOT EXISTS dm_messages (
+      id TEXT PRIMARY KEY,
+      thread_id TEXT NOT NULL,
+      sender_id TEXT NOT NULL,
+      message TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_dm_messages_thread_created ON dm_messages(thread_id, created_at);
 
     CREATE TABLE IF NOT EXISTS notifications (
       id TEXT PRIMARY KEY,
@@ -1228,6 +1282,156 @@ export async function listGroupMessages(limit: number): Promise<GroupMessage[]> 
       createdAt: r.created_at,
     }))
     .reverse()
+}
+
+function orderPair(a: string, b: string) {
+  return a < b ? [a, b] : [b, a]
+}
+
+export async function createOrGetDmThread(userId: string, otherUserId: string): Promise<DmThread> {
+  if (userId === otherUserId) throw new Error("No puedes crear un chat contigo mismo.")
+  const createdAt = nowIso()
+  const [userA, userB] = orderPair(userId, otherUserId)
+
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    const existing = (await sql`SELECT id, user_a, user_b, created_at FROM dm_threads
+      WHERE user_a = ${userA} AND user_b = ${userB} LIMIT 1`) as any[]
+    if (existing[0]?.id) {
+      const r = existing[0]
+      return { id: String(r.id), userA: String(r.user_a), userB: String(r.user_b), createdAt: String(r.created_at) }
+    }
+    const id = crypto.randomUUID()
+    await sql`INSERT INTO dm_threads (id, user_a, user_b, created_at) VALUES (${id}, ${userA}, ${userB}, ${createdAt})`
+    return { id, userA, userB, createdAt }
+  }
+
+  const db = getSqliteDb()
+  const existing = db
+    .prepare(`SELECT id, user_a, user_b, created_at FROM dm_threads WHERE user_a = ? AND user_b = ? LIMIT 1`)
+    .get(userA, userB) as any
+  if (existing?.id) {
+    return { id: String(existing.id), userA: String(existing.user_a), userB: String(existing.user_b), createdAt: String(existing.created_at) }
+  }
+  const id = crypto.randomUUID()
+  db.prepare(`INSERT INTO dm_threads (id, user_a, user_b, created_at) VALUES (?, ?, ?, ?)`).run(id, userA, userB, createdAt)
+  return { id, userA, userB, createdAt }
+}
+
+export async function listDmThreadsForUser(userId: string): Promise<DmThread[]> {
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    const rows = (await sql`SELECT id, user_a, user_b, created_at FROM dm_threads
+      WHERE user_a = ${userId} OR user_b = ${userId}
+      ORDER BY created_at DESC`) as any[]
+    return rows.map((r) => ({ id: String(r.id), userA: String(r.user_a), userB: String(r.user_b), createdAt: String(r.created_at) }))
+  }
+  const db = getSqliteDb()
+  const rows = db
+    .prepare(`SELECT id, user_a, user_b, created_at FROM dm_threads WHERE user_a = ? OR user_b = ? ORDER BY created_at DESC`)
+    .all(userId, userId) as any[]
+  return rows.map((r) => ({ id: String(r.id), userA: String(r.user_a), userB: String(r.user_b), createdAt: String(r.created_at) }))
+}
+
+async function assertDmParticipant(threadId: string, userId: string) {
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    const rows = (await sql`SELECT id FROM dm_threads WHERE id = ${threadId} AND (user_a = ${userId} OR user_b = ${userId}) LIMIT 1`) as any[]
+    if (!rows[0]?.id) throw new Error("Forbidden")
+    return
+  }
+  const db = getSqliteDb()
+  const row = db.prepare(`SELECT id FROM dm_threads WHERE id = ? AND (user_a = ? OR user_b = ?) LIMIT 1`).get(threadId, userId, userId) as any
+  if (!row?.id) throw new Error("Forbidden")
+}
+
+export async function listDmMessages(threadId: string, userId: string, limit: number): Promise<DmMessage[]> {
+  await assertDmParticipant(threadId, userId)
+  const safeLimit = Math.max(1, Math.min(200, Math.floor(limit)))
+
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    const rows = (await sql`SELECT m.id, m.thread_id, m.sender_id, m.message, m.created_at, u.name, u.display_name
+      FROM dm_messages m
+      JOIN users u ON u.id = m.sender_id
+      WHERE m.thread_id = ${threadId}
+      ORDER BY m.created_at DESC
+      LIMIT ${safeLimit}`) as any[]
+    return rows
+      .map((r) => ({
+        id: String(r.id),
+        threadId: String(r.thread_id),
+        senderId: String(r.sender_id),
+        senderName: String(r.display_name ?? r.name ?? "Usuario"),
+        message: String(r.message),
+        createdAt: String(r.created_at),
+      }))
+      .reverse()
+  }
+
+  const db = getSqliteDb()
+  const rows = db
+    .prepare(
+      `SELECT m.id, m.thread_id, m.sender_id, m.message, m.created_at, u.name, u.display_name
+       FROM dm_messages m
+       JOIN users u ON u.id = m.sender_id
+       WHERE m.thread_id = ?
+       ORDER BY m.created_at DESC
+       LIMIT ?`,
+    )
+    .all(threadId, safeLimit) as any[]
+  return rows
+    .map((r) => ({
+      id: String(r.id),
+      threadId: String(r.thread_id),
+      senderId: String(r.sender_id),
+      senderName: String(r.display_name ?? r.name ?? "Usuario"),
+      message: String(r.message),
+      createdAt: String(r.created_at),
+    }))
+    .reverse()
+}
+
+export async function createDmMessage(threadId: string, userId: string, message: string): Promise<DmMessage> {
+  const createdAt = nowIso()
+  const id = crypto.randomUUID()
+  const trimmed = message.trim()
+  if (!trimmed) throw new Error("Mensaje vacío")
+  await assertDmParticipant(threadId, userId)
+
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    await sql`INSERT INTO dm_messages (id, thread_id, sender_id, message, created_at) VALUES (${id}, ${threadId}, ${userId}, ${trimmed}, ${createdAt})`
+  } else {
+    const db = getSqliteDb()
+    db.prepare(`INSERT INTO dm_messages (id, thread_id, sender_id, message, created_at) VALUES (?, ?, ?, ?, ?)`).run(
+      id,
+      threadId,
+      userId,
+      trimmed,
+      createdAt,
+    )
+  }
+
+  const user = await getUserById(userId)
+  return {
+    id,
+    threadId,
+    senderId: userId,
+    senderName: user?.displayName || user?.name || "Usuario",
+    message: trimmed,
+    createdAt,
+  }
 }
 
 export async function createNotification(
