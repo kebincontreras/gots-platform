@@ -6,9 +6,12 @@ import { getImagePath } from "@/lib/utils"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Mail, GraduationCap } from "lucide-react"
 import { type Language, useLanguage } from "@/components/language-provider"
+import { useSession } from "next-auth/react"
+import { Button } from "@/components/ui/button"
 
 interface TeamMember {
-  id: number
+  id: string | number
+  userId?: string | null
   nombre: string
   apellido: string | null
   programaAcademico?: string | null
@@ -171,10 +174,15 @@ function getMemberProfileLinks(member: TeamMember) {
 
 export default function EquipoPage() {
   const { language } = useLanguage()
+  const { data: session } = useSession()
   const [groupMembers, setGroupMembers] = useState<TeamMember[]>([])
   const [legacyMembers, setLegacyMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null)
+  const isAdmin =
+    ["kebinandrescontreras@gmail.com", "rafael.torres@saber.uis.edu.co"].includes(
+      String((session?.user as any)?.email ?? "").trim().toLowerCase(),
+    )
   const ui: Record<Language, { teamTitle: string; loading: string; groupLabels: Record<GroupKey, string>; mailAria: string }> = {
     es: {
       teamTitle: "Equipo",
@@ -253,7 +261,8 @@ export default function EquipoPage() {
           const first = parts[0] ?? full
           const last = parts.slice(1).join(" ") || null
           return {
-            id: idx + 100000,
+            id: String(m.id ?? idx + 100000),
+            userId: m.id ? String(m.id) : null,
             nombre: first,
             apellido: last,
             email: m.publicEmail ?? null,
@@ -330,8 +339,7 @@ export default function EquipoPage() {
   const combinedMembers = useMemo(() => {
     const byKey = new Map<string, TeamMember>()
     const keyFor = (m: TeamMember) => {
-      const email = (m.publicEmail || m.email || "").trim().toLowerCase()
-      if (email) return `email:${email}`
+      // Prefer name-based key to avoid duplicates between legacy JSON and DB list (DB doesn't expose email).
       const name = normalize(`${m.nombre} ${m.apellido || ""}`.trim())
       return `name:${name}`
     }
@@ -484,6 +492,57 @@ export default function EquipoPage() {
                         </div>
                       )
                     })()}
+
+                    {isAdmin && selectedMember.userId ? (
+                      <div className="flex justify-end pt-2">
+                        <Button
+                          variant="destructive"
+                          onClick={async () => {
+                            if (!confirm("¿Eliminar este miembro del equipo?")) return
+                            const res = await fetch(`/api/membership/members/${encodeURIComponent(selectedMember.userId!)}`, {
+                              method: "DELETE",
+                            })
+                            if (!res.ok) return
+                            setSelectedMember(null)
+                            // Reload
+                            setLoading(true)
+                            try {
+                              const apiRes = await fetch("/api/team")
+                              const apiBody = await apiRes.json().catch(() => ({}))
+                              const apiTeam = Array.isArray(apiBody?.team) ? apiBody.team : []
+                              const mapped: TeamMember[] = apiTeam.map((m: any, idx: number) => {
+                                const full = String(m.displayName || m.name || "").trim() || "Miembro"
+                                const parts = full.split(/\s+/)
+                                const first = parts[0] ?? full
+                                const last = parts.slice(1).join(" ") || null
+                                return {
+                                  id: String(m.id ?? idx + 100000),
+                                  userId: m.id ? String(m.id) : null,
+                                  nombre: first,
+                                  apellido: last,
+                                  email: m.publicEmail ?? null,
+                                  scholar: m.scholarUrl ?? null,
+                                  linkedin: m.linkedinUrl ?? null,
+                                  researchgate: m.researchgateUrl ?? null,
+                                  activo: true,
+                                  photoUrl: m.photoUrl ?? null,
+                                  displayName: m.displayName ?? null,
+                                  publicEmail: m.publicEmail ?? null,
+                                  academicLevel: m.academicLevel ?? null,
+                                  memberCategory: m.memberCategory ?? null,
+                                  role: m.role ?? null,
+                                }
+                              })
+                              setGroupMembers(mapped)
+                            } finally {
+                              setLoading(false)
+                            }
+                          }}
+                        >
+                          Eliminar del equipo
+                        </Button>
+                      </div>
+                    ) : null}
                   </div>
                 </DialogContent>
               )}

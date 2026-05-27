@@ -5,6 +5,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { LanguageProvider } from "@/components/language-provider"
 import { AuthSessionProvider } from "@/components/session-provider"
+import { ChatDock } from "@/components/chat-dock"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -26,7 +27,10 @@ export default function RootLayout({
     <html lang="fr" className={inter.variable}>
       <body className={`font-sans antialiased`}>
         <AuthSessionProvider>
-          <LanguageProvider>{children}</LanguageProvider>
+          <LanguageProvider>
+            {children}
+            <ChatDock />
+          </LanguageProvider>
         </AuthSessionProvider>
   {/* <Analytics /> */}
       </body>
