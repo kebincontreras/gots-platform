@@ -16,11 +16,10 @@ function isGroupAdmin(email: string | undefined | null) {
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const session = await getServerSession(authOptions)
-  const role = (session?.user as any)?.role as string | undefined
   const email = (session?.user as any)?.email as string | undefined
   const resolverId = (session?.user as any)?.id as string | undefined
   if (!session?.user || !resolverId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  if (role !== "PROFESSOR" || !isGroupAdmin(email)) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  if (!isGroupAdmin(email)) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const body = await req.json().catch(() => null)
   const action = (body?.action ?? "").toString().trim().toLowerCase()
@@ -36,4 +35,3 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
   return NextResponse.json({ ok: true })
 }
-

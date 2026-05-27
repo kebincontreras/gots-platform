@@ -23,11 +23,10 @@ function isGroupAdmin(email: string | undefined | null) {
 export async function DELETE(_req: Request, { params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params
   const session = await getServerSession(authOptions)
-  const role = (session?.user as any)?.role as string | undefined
   const email = (session?.user as any)?.email as string | undefined
   const resolverId = (session?.user as any)?.id as string | undefined
   if (!session?.user || !resolverId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  if (role !== "PROFESSOR" || !isGroupAdmin(email)) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  if (!isGroupAdmin(email)) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   if (!userId) return NextResponse.json({ error: "Invalid userId" }, { status: 400 })
   await setUserGroupMember(userId, false)
@@ -41,4 +40,3 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ user
 
   return NextResponse.json({ ok: true })
 }
-
