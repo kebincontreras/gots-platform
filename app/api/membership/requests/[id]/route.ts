@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { resolveMembershipRequest, setUserGroupMember } from "@/lib/store"
+import { createNotification, getUserById, listNotifiableUserIds, resolveMembershipRequest, setUserGroupMember } from "@/lib/store"
 
 function isGroupAdmin(email: string | undefined | null) {
   const normalized = (email ?? "").trim().toLowerCase()
@@ -32,6 +32,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   await resolveMembershipRequest({ requestId: id, status: status as any, resolvedBy: resolverId })
   if (status === "APPROVED") {
     await setUserGroupMember(userId, true)
+    const joinedUser = await getUserById(userId).catch(() => null)
+    const recipients = await listNotifiableUserIds().catch(() => [])
+    await Promise.all(
+      recipients
+        .filter((rid) => rid !== userId)
+        .map((rid) =>
+          createNotification({
+            userId: rid,
+            type: "MEMBER_JOINED",
+            title: "Nuevo integrante en el equipo",
+            body: joinedUser ? `${joinedUser.displayName || joinedUser.name} ahora hace parte del grupo.` : "Un nuevo integrante fue aprobado.",
+            url: "/equipo",
+          }),
+        ),
+    ).catch(() => {})
   }
   return NextResponse.json({ ok: true })
 }

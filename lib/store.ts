@@ -94,7 +94,7 @@ export type GroupMessage = {
   createdAt: string
 }
 
-export type NotificationType = "MEMBERSHIP_REQUEST" | "NEWS_PUBLISHED"
+export type NotificationType = "MEMBERSHIP_REQUEST" | "NEWS_PUBLISHED" | "MEMBER_JOINED"
 
 export type Notification = {
   id: string
