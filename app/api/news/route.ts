@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { createNews, listNews, listNewsByUser } from "@/lib/store"
+import { createNews, createNotification, listNews, listNewsByUser, listNotifiableUserIds } from "@/lib/store"
 import fs from "node:fs"
 import path from "node:path"
 
@@ -80,6 +80,20 @@ export async function POST(req: Request) {
       readTime,
       content: normalizedContent,
     }, userId)
+
+    // Notify group members + professors about new news
+    const recipients = await listNotifiableUserIds().catch(() => [])
+    await Promise.all(
+      recipients.map((rid) =>
+        createNotification({
+          userId: rid,
+          type: "NEWS_PUBLISHED",
+          title: "Nueva noticia publicada",
+          body: created.title || "Noticia",
+          url: "/noticias",
+        }),
+      ),
+    )
     return NextResponse.json({ ok: true, news: created })
   } catch (e: any) {
     return NextResponse.json(

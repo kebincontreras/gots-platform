@@ -7,6 +7,7 @@ import { signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { getPagePath } from "@/lib/utils"
 import { useLanguage } from "@/components/language-provider"
+import { NotificationsBell } from "@/components/notifications-bell"
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -95,6 +96,7 @@ export function Header() {
 
             {session?.user ? (
               <div className="flex items-center gap-3">
+                <NotificationsBell solid={Boolean(isScrolled || forceSolidHeader)} />
                 <a
                   href={(session.user as any).role === "PROFESSOR" ? "/profesor" : "/dashboard"}
                   className={`text-sm font-sans font-medium transition-colors ${
@@ -195,6 +197,10 @@ export function Header() {
 
             {session?.user ? (
               <>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">Notificaciones</div>
+                  <NotificationsBell solid />
+                </div>
                 <a
                   href={(session.user as any).role === "PROFESSOR" ? "/profesor" : "/dashboard"}
                   className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
