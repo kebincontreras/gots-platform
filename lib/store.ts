@@ -706,6 +706,19 @@ export async function updateUserDocEmbedUrl(userId: string, docEmbedUrl: string)
   db.prepare(`UPDATE users SET doc_embed_url = ?, updated_at = ? WHERE id = ?`).run(docEmbedUrl, updatedAt, userId)
 }
 
+export async function updateUserPasswordHash(userId: string, passwordHash: string): Promise<void> {
+  const updatedAt = nowIso()
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    await sql`UPDATE users SET password_hash = ${passwordHash}, updated_at = ${updatedAt} WHERE id = ${userId}`
+    return
+  }
+  const db = getSqliteDb()
+  db.prepare(`UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?`).run(passwordHash, updatedAt, userId)
+}
+
 export async function updateUserProfile(
   userId: string,
   input: {
