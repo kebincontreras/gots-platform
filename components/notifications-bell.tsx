@@ -19,6 +19,7 @@ type Notification = {
   title: string
   body: string | null
   url: string | null
+  meta: Record<string, any> | null
   createdAt: string
   readAt: string | null
 }
@@ -57,6 +58,26 @@ export function NotificationsBell({ solid }: { solid: boolean }) {
 
   const onOpenChange = async (open: boolean) => {
     if (open) await load()
+  }
+
+  const resolveMembership = async (input: { notificationId: string; requestId: string; userId: string; action: "approve" | "reject" }) => {
+    setError(null)
+    const res = await fetch(`/api/membership/requests/${encodeURIComponent(input.requestId)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: input.action, userId: input.userId }),
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      setError(body?.error ?? "No se pudo resolver la solicitud.")
+      return
+    }
+    await fetch("/api/notifications/read", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notificationId: input.notificationId }),
+    })
+    await load()
   }
 
   return (
@@ -99,9 +120,68 @@ export function NotificationsBell({ solid }: { solid: boolean }) {
           <div className="px-2 py-6 text-sm text-muted-foreground text-center">Sin notificaciones.</div>
         ) : null}
         {items.map((n) => (
-          <DropdownMenuItem key={n.id} className="items-start gap-2" asChild>
-            {n.url ? (
-              <Link href={n.url}>
+          n.type === "MEMBERSHIP_REQUEST" && n.meta?.requestId && n.meta?.userId ? (
+            <DropdownMenuItem
+              key={n.id}
+              className="items-start gap-2"
+              onSelect={(e) => e.preventDefault()}
+            >
+              <div className="flex w-full flex-col gap-1">
+                <div className="text-sm font-medium">
+                  {n.title} {n.readAt ? null : <span className="text-xs text-red-600">•</span>}
+                </div>
+                {n.body ? <div className="text-xs text-muted-foreground">{n.body}</div> : null}
+                <div className="text-[11px] text-muted-foreground">{new Date(n.createdAt).toLocaleString()}</div>
+                <div className="mt-2 flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      void resolveMembership({
+                        notificationId: n.id,
+                        requestId: String(n.meta?.requestId),
+                        userId: String(n.meta?.userId),
+                        action: "approve",
+                      })
+                    }}
+                  >
+                    Aceptar
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      void resolveMembership({
+                        notificationId: n.id,
+                        requestId: String(n.meta?.requestId),
+                        userId: String(n.meta?.userId),
+                        action: "reject",
+                      })
+                    }}
+                  >
+                    Rechazar
+                  </Button>
+                </div>
+              </div>
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem key={n.id} className="items-start gap-2" asChild>
+              {n.url ? (
+                <Link href={n.url}>
+                  <div className="flex flex-col gap-0.5">
+                    <div className="text-sm font-medium">
+                      {n.title} {n.readAt ? null : <span className="text-xs text-red-600">•</span>}
+                    </div>
+                    {n.body ? <div className="text-xs text-muted-foreground">{n.body}</div> : null}
+                    <div className="text-[11px] text-muted-foreground">{new Date(n.createdAt).toLocaleString()}</div>
+                  </div>
+                </Link>
+              ) : (
                 <div className="flex flex-col gap-0.5">
                   <div className="text-sm font-medium">
                     {n.title} {n.readAt ? null : <span className="text-xs text-red-600">•</span>}
@@ -109,20 +189,11 @@ export function NotificationsBell({ solid }: { solid: boolean }) {
                   {n.body ? <div className="text-xs text-muted-foreground">{n.body}</div> : null}
                   <div className="text-[11px] text-muted-foreground">{new Date(n.createdAt).toLocaleString()}</div>
                 </div>
-              </Link>
-            ) : (
-              <div className="flex flex-col gap-0.5">
-                <div className="text-sm font-medium">
-                  {n.title} {n.readAt ? null : <span className="text-xs text-red-600">•</span>}
-                </div>
-                {n.body ? <div className="text-xs text-muted-foreground">{n.body}</div> : null}
-                <div className="text-[11px] text-muted-foreground">{new Date(n.createdAt).toLocaleString()}</div>
-              </div>
-            )}
-          </DropdownMenuItem>
+              )}
+            </DropdownMenuItem>
+          )
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
-

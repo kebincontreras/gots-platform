@@ -19,6 +19,7 @@ export default function RegisterPage() {
   const [profile, setProfile] = useState<"PROFESSIONAL" | "GUEST" | "STUDENT" | "EXTERNAL_RESEARCHER" | "PROFESSOR">(
     "PROFESSIONAL",
   )
+  const [memberCategory, setMemberCategory] = useState<"" | "Estudiante de doctorado" | "Estudiante de maestría" | "Estudiante de pregrado">("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -42,13 +43,17 @@ export default function RegisterPage() {
               setError(t("auth.mismatchPassword"))
               return
             }
+            if (profile === "STUDENT" && !memberCategory) {
+              setError("Selecciona tu categoría (doctorado, maestría o pregrado).")
+              return
+            }
 
             setLoading(true)
 
             const res = await fetch("/api/register", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ name, email, emailConfirm, password, passwordConfirm, profile }),
+              body: JSON.stringify({ name, email, emailConfirm, password, passwordConfirm, profile, memberCategory }),
             })
             if (!res.ok) {
               const body = await res.json().catch(() => ({}))
@@ -90,6 +95,21 @@ export default function RegisterPage() {
             </SelectContent>
           </Select>
           </div>
+          {profile === "STUDENT" ? (
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Categoría</label>
+              <Select value={memberCategory} onValueChange={(v: any) => setMemberCategory(v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecciona tu categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Estudiante de doctorado">Estudiante de doctorado</SelectItem>
+                  <SelectItem value="Estudiante de maestría">Estudiante de maestría</SelectItem>
+                  <SelectItem value="Estudiante de pregrado">Estudiante de pregrado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
           <div className="space-y-1">
             <label className="text-sm font-medium">{t("auth.email")}</label>
             <Input

@@ -44,6 +44,7 @@ export async function POST() {
           title: "Nueva solicitud de ingreso",
           body: user ? `${user.name} (${user.email})` : `UserId: ${userId}`,
           url: "/profesor",
+          meta: { requestId: created.id, userId },
         }),
       ),
     )

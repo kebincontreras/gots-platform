@@ -103,12 +103,26 @@ export type Notification = {
   title: string
   body: string | null
   url: string | null
+  meta: Record<string, any> | null
   createdAt: string
   readAt: string | null
 }
 
 function nowIso() {
   return new Date().toISOString()
+}
+
+function safeJsonParse(value: unknown): Record<string, any> | null {
+  if (typeof value !== "string") return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  try {
+    const parsed = JSON.parse(trimmed)
+    if (!parsed || typeof parsed !== "object") return null
+    return parsed as any
+  } catch {
+    return null
+  }
 }
 
 function ensureDirExists(dirPath: string) {
@@ -258,6 +272,7 @@ async function ensurePgSchema() {
       title TEXT NOT NULL,
       body TEXT,
       url TEXT,
+      meta TEXT,
       created_at TEXT NOT NULL,
       read_at TEXT
     );
@@ -284,6 +299,7 @@ async function ensurePgSchema() {
   } catch {}
 
   await sql`ALTER TABLE news ADD COLUMN IF NOT EXISTS created_by TEXT;`
+  await sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS meta TEXT;`
 
   await sql`CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(date);`
   await sql`CREATE INDEX IF NOT EXISTS idx_news_date ON news(date);`
@@ -407,6 +423,7 @@ function getSqliteDb() {
       title TEXT NOT NULL,
       body TEXT,
       url TEXT,
+      meta TEXT,
       created_at TEXT NOT NULL,
       read_at TEXT
     );
@@ -441,6 +458,12 @@ function getSqliteDb() {
   const hasNewsCreatedBy = newsCols.some((c) => c.name === "created_by")
   if (!hasNewsCreatedBy) {
     db.exec(`ALTER TABLE news ADD COLUMN created_by TEXT;`)
+  }
+
+  const notifCols = db.prepare(`PRAGMA table_info(notifications)`).all() as Array<{ name: string }>
+  const hasNotifMeta = notifCols.some((c) => c.name === "meta")
+  if (!hasNotifMeta) {
+    db.exec(`ALTER TABLE notifications ADD COLUMN meta TEXT;`)
   }
 
   sqliteSingleton = db
@@ -643,11 +666,20 @@ export async function getUserById(id: string): Promise<User | null> {
   }
 }
 
-export async function createUser(input: { name: string; email: string; passwordHash: string; role?: Role }): Promise<User> {
+export async function createUser(input: {
+  name: string
+  email: string
+  passwordHash: string
+  role?: Role
+  academicLevel?: string | null
+  memberCategory?: string | null
+}): Promise<User> {
   const id = crypto.randomUUID()
   const createdAt = nowIso()
   const updatedAt = createdAt
   const role = input.role ?? "STUDENT"
+  const academicLevel = input.academicLevel ?? null
+  const memberCategory = input.memberCategory ?? null
 
   if (shouldUsePostgres()) {
     const sql = getPgSql()
@@ -655,15 +687,15 @@ export async function createUser(input: { name: string; email: string; passwordH
     await ensurePgSchema()
 
     await sql`
-      INSERT INTO users (id, email, name, password_hash, role, created_at, updated_at)
-      VALUES (${id}, ${input.email}, ${input.name}, ${input.passwordHash}, ${role}, ${createdAt}, ${updatedAt})
+      INSERT INTO users (id, email, name, password_hash, role, academic_level, member_category, created_at, updated_at)
+      VALUES (${id}, ${input.email}, ${input.name}, ${input.passwordHash}, ${role}, ${academicLevel}, ${memberCategory}, ${createdAt}, ${updatedAt})
     `
   } else {
     const db = getSqliteDb()
     db.prepare(
-      `INSERT INTO users (id, email, name, password_hash, role, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    ).run(id, input.email, input.name, input.passwordHash, role, createdAt, updatedAt)
+      `INSERT INTO users (id, email, name, password_hash, role, academic_level, member_category, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(id, input.email, input.name, input.passwordHash, role, academicLevel, memberCategory, createdAt, updatedAt)
   }
 
   return {
@@ -676,8 +708,8 @@ export async function createUser(input: { name: string; email: string; passwordH
     researchgateUrl: null,
     scholarUrl: null,
     photoUrl: null,
-    academicLevel: null,
-    memberCategory: null,
+    academicLevel,
+    memberCategory,
     directorId: null,
     directorName: null,
     groupMember: false,
@@ -1085,21 +1117,22 @@ export async function createNotification(
   const createdAt = nowIso()
   const id = input.id || crypto.randomUUID()
   const readAt = null
+  const metaJson = input.meta ? JSON.stringify(input.meta) : null
 
   if (shouldUsePostgres()) {
     const sql = getPgSql()
     if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
     await ensurePgSchema()
-    await sql`INSERT INTO notifications (id, user_id, type, title, body, url, created_at, read_at)
-      VALUES (${id}, ${input.userId}, ${input.type}, ${input.title}, ${input.body}, ${input.url}, ${createdAt}, ${readAt})`
+    await sql`INSERT INTO notifications (id, user_id, type, title, body, url, meta, created_at, read_at)
+      VALUES (${id}, ${input.userId}, ${input.type}, ${input.title}, ${input.body}, ${input.url}, ${metaJson}, ${createdAt}, ${readAt})`
     return { ...(input as any), id, createdAt, readAt }
   }
 
   const db = getSqliteDb()
   db.prepare(
-    `INSERT INTO notifications (id, user_id, type, title, body, url, created_at, read_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(id, input.userId, input.type, input.title, input.body ?? null, input.url ?? null, createdAt, readAt)
+    `INSERT INTO notifications (id, user_id, type, title, body, url, meta, created_at, read_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(id, input.userId, input.type, input.title, input.body ?? null, input.url ?? null, metaJson, createdAt, readAt)
   return { ...(input as any), id, createdAt, readAt }
 }
 
@@ -1109,7 +1142,7 @@ export async function listNotificationsForUser(userId: string, limit: number): P
     const sql = getPgSql()
     if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
     await ensurePgSchema()
-    const rows = (await sql`SELECT id, user_id, type, title, body, url, created_at, read_at
+    const rows = (await sql`SELECT id, user_id, type, title, body, url, meta, created_at, read_at
       FROM notifications
       WHERE user_id = ${userId}
       ORDER BY created_at DESC
@@ -1121,6 +1154,7 @@ export async function listNotificationsForUser(userId: string, limit: number): P
       title: r.title,
       body: r.body ?? null,
       url: r.url ?? null,
+      meta: safeJsonParse(r.meta),
       createdAt: r.created_at,
       readAt: r.read_at ?? null,
     }))
@@ -1129,7 +1163,7 @@ export async function listNotificationsForUser(userId: string, limit: number): P
   const db = getSqliteDb()
   const rows = db
     .prepare(
-      `SELECT id, user_id, type, title, body, url, created_at, read_at
+      `SELECT id, user_id, type, title, body, url, meta, created_at, read_at
        FROM notifications
        WHERE user_id = ?
        ORDER BY created_at DESC
@@ -1143,6 +1177,7 @@ export async function listNotificationsForUser(userId: string, limit: number): P
     title: r.title,
     body: r.body ?? null,
     url: r.url ?? null,
+    meta: safeJsonParse(r.meta),
     createdAt: r.created_at,
     readAt: r.read_at ?? null,
   }))

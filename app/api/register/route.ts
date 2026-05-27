@@ -19,6 +19,7 @@ export async function POST(req: Request) {
     const password = (body?.password ?? "").toString()
     const passwordConfirm = (body?.passwordConfirm ?? "").toString()
     const requestedProfile = (body?.profile ?? "").toString().trim().toUpperCase()
+    const memberCategoryRaw = (body?.memberCategory ?? "").toString().trim()
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: "Faltan campos." }, { status: 400 })
@@ -32,6 +33,12 @@ export async function POST(req: Request) {
     if (password.length < 8) {
       return NextResponse.json({ error: "La contraseña debe tener al menos 8 caracteres." }, { status: 400 })
     }
+
+    const allowedStudentCategories = new Set([
+      "Estudiante de doctorado",
+      "Estudiante de maestría",
+      "Estudiante de pregrado",
+    ])
 
     const existing = await getUserByEmail(email)
     if (existing) {
@@ -62,7 +69,35 @@ export async function POST(req: Request) {
     // Safety: if email is in professor allowlist, always keep PROFESSOR.
     if (emailRole === "PROFESSOR") role = "PROFESSOR"
 
-    const user = await createUser({ name, email, passwordHash, role })
+    const isStudent = role === "STUDENT"
+    const memberCategory = isStudent ? memberCategoryRaw : ""
+
+    if (isStudent) {
+      if (!memberCategory || !allowedStudentCategories.has(memberCategory)) {
+        return NextResponse.json(
+          { error: "Selecciona tu categoría: doctorado, maestría o pregrado." },
+          { status: 400 },
+        )
+      }
+    }
+
+    const academicLevel =
+      memberCategory === "Estudiante de doctorado"
+        ? "DOCTORADO"
+        : memberCategory === "Estudiante de maestría"
+          ? "MAESTRIA"
+          : memberCategory === "Estudiante de pregrado"
+            ? "PREGRADO"
+            : null
+
+    const user = await createUser({
+      name,
+      email,
+      passwordHash,
+      role,
+      memberCategory: isStudent ? memberCategory : null,
+      academicLevel: isStudent ? academicLevel : null,
+    })
 
     return NextResponse.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role } })
   } catch (err: any) {
