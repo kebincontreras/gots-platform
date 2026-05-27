@@ -302,9 +302,16 @@ export default function NewsPage() {
                         variant="ghost"
                         size="sm"
                         className="h-auto p-0 text-xs text-primary hover:text-primary/80"
-                        onClick={e => { e.stopPropagation(); openModal(localized.id); }}
+                        asChild
                       >
-                        {l.readMore}
+                        <a
+                          href={`/noticias/noticia/${localized.id}`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                          }}
+                        >
+                          {l.readMore}
+                        </a>
                       </Button>
                     </div>
                   </CardContent>

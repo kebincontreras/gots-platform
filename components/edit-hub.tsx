@@ -9,7 +9,7 @@ export function EditHub() {
     <Tabs defaultValue="news" className="w-full">
       <TabsList>
         <TabsTrigger value="news">Noticias</TabsTrigger>
-        <TabsTrigger value="publications">Publicaciones</TabsTrigger>
+        <TabsTrigger value="publications">Artículos</TabsTrigger>
       </TabsList>
 
       <TabsContent value="news">
@@ -21,4 +21,3 @@ export function EditHub() {
     </Tabs>
   )
 }
-

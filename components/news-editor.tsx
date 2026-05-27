@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -36,6 +36,7 @@ export function NewsEditor() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
+  const imageInputRef = useRef<HTMLInputElement | null>(null)
 
   const [title, setTitle] = useState("")
   const [summary, setSummary] = useState("")
@@ -71,6 +72,10 @@ export function NewsEditor() {
 
   const onPickImage = async (file: File | null) => {
     if (!file) return
+    if (!file.type.startsWith("image/")) {
+      setError("Selecciona una imagen.")
+      return
+    }
     const maxBytes = 2 * 1024 * 1024
     if (file.size > maxBytes) {
       setError("La imagen es muy grande (máx 2MB).")
@@ -82,7 +87,28 @@ export function NewsEditor() {
       reader.onerror = () => reject(new Error("No se pudo leer la imagen"))
       reader.readAsDataURL(file)
     })
-    setImage(dataUrl)
+
+    // Resize (max 1024px) to keep it lightweight
+    const resized = await new Promise<string>((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        const max = 1024
+        const ratio = Math.min(1, max / Math.max(img.width, img.height))
+        const w = Math.max(1, Math.round(img.width * ratio))
+        const h = Math.max(1, Math.round(img.height * ratio))
+        const canvas = document.createElement("canvas")
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext("2d")
+        if (!ctx) return resolve(dataUrl)
+        ctx.drawImage(img, 0, 0, w, h)
+        resolve(canvas.toDataURL("image/jpeg", 0.85))
+      }
+      img.onerror = () => resolve(dataUrl)
+      img.src = dataUrl
+    })
+
+    setImage(resized)
   }
 
   const onCreate = async () => {
@@ -245,24 +271,36 @@ export function NewsEditor() {
           </div>
           <div className="grid gap-1 sm:grid-cols-2 sm:gap-3">
             <div className="grid gap-1">
-              <div className="text-sm font-medium">Imagen (ruta en /public)</div>
-              <Input value={image} onChange={(e) => setImage(e.target.value)} placeholder="/Noticias/a1.jpeg" />
+              <div className="text-sm font-medium">Imagen</div>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => onPickImage(e.target.files?.[0] ?? null)}
+              />
+              <button
+                type="button"
+                className="w-full max-w-[220px] aspect-square rounded-lg border border-dashed bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-center overflow-hidden"
+                onClick={() => imageInputRef.current?.click()}
+              >
+                {image && image !== "/Noticias/" ? (
+                  <img src={getImagePath(image)} alt="Imagen noticia" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-center px-4">
+                    <div className="text-sm font-medium">Dar click para subir</div>
+                    <div className="text-xs text-muted-foreground mt-1">Desde tu PC</div>
+                  </div>
+                )}
+              </button>
+              <div className="text-xs text-muted-foreground">
+                También puedes pegar una ruta en <code>/public/Noticias</code> o una URL.
+              </div>
+              <Input value={image} onChange={(e) => setImage(e.target.value)} placeholder="/Noticias/a1.jpeg o https://..." />
             </div>
             <div className="grid gap-1">
               <div className="text-sm font-medium">Autor</div>
               <Input value={author} onChange={(e) => setAuthor(e.target.value)} />
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <div className="text-sm font-medium">Subir imagen</div>
-            <Input type="file" accept="image/*" onChange={(e) => onPickImage(e.target.files?.[0] ?? null)} />
-            {image ? (
-              <div className="rounded-lg border overflow-hidden max-w-xl">
-                <img src={getImagePath(image)} alt="Preview" className="w-full h-auto" />
-              </div>
-            ) : null}
-            <div className="text-xs text-muted-foreground">
-              Recomendado: usar ruta en <code>/public/Noticias</code>. Si subes aquí, se guarda como imagen embebida (puede ser más pesado).
             </div>
           </div>
           <div className="grid gap-1 sm:grid-cols-2 sm:gap-3">

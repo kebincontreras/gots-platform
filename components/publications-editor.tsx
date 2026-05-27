@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { getImagePath } from "@/lib/utils"
 
 type Publication = {
   id: number
@@ -35,6 +36,7 @@ export function PublicationsEditor() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
+  const imageInputRef = useRef<HTMLInputElement | null>(null)
 
   const [title, setTitle] = useState("")
   const [authors, setAuthors] = useState("")
@@ -70,6 +72,46 @@ export function PublicationsEditor() {
   useEffect(() => {
     refresh()
   }, [])
+
+  const onPickImage = async (file: File | null) => {
+    if (!file) return
+    if (!file.type.startsWith("image/")) {
+      setError("Selecciona una imagen.")
+      return
+    }
+    const maxBytes = 2 * 1024 * 1024
+    if (file.size > maxBytes) {
+      setError("La imagen es muy grande (máx 2MB).")
+      return
+    }
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result))
+      reader.onerror = () => reject(new Error("No se pudo leer la imagen"))
+      reader.readAsDataURL(file)
+    })
+
+    const resized = await new Promise<string>((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        const max = 1024
+        const ratio = Math.min(1, max / Math.max(img.width, img.height))
+        const w = Math.max(1, Math.round(img.width * ratio))
+        const h = Math.max(1, Math.round(img.height * ratio))
+        const canvas = document.createElement("canvas")
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext("2d")
+        if (!ctx) return resolve(dataUrl)
+        ctx.drawImage(img, 0, 0, w, h)
+        resolve(canvas.toDataURL("image/jpeg", 0.85))
+      }
+      img.onerror = () => resolve(dataUrl)
+      img.src = dataUrl
+    })
+
+    setImage(resized)
+  }
 
   const onCreate = async () => {
     setSaving(true)
@@ -214,7 +256,7 @@ export function PublicationsEditor() {
     <div className="grid gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>{editingId ? `Editar publicación #${editingId}` : "Nueva publicación"}</CardTitle>
+          <CardTitle>{editingId ? `Editar artículo #${editingId}` : "Nuevo artículo"}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
           <div className="grid gap-1">
@@ -241,8 +283,36 @@ export function PublicationsEditor() {
               <Input value={year} onChange={(e) => setYear(e.target.value)} placeholder="2026" />
             </div>
             <div className="grid gap-1">
-              <div className="text-sm font-medium">Imagen (ruta en /public o URL)</div>
-              <Input value={image} onChange={(e) => setImage(e.target.value)} placeholder="/Explicit_Cartesian_oval.png" />
+              <div className="text-sm font-medium">Imagen</div>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => onPickImage(e.target.files?.[0] ?? null)}
+              />
+              <button
+                type="button"
+                className="w-full max-w-[220px] aspect-square rounded-lg border border-dashed bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-center overflow-hidden"
+                onClick={() => imageInputRef.current?.click()}
+              >
+                {image ? (
+                  <img src={getImagePath(image)} alt="Imagen artículo" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-center px-4">
+                    <div className="text-sm font-medium">Dar click para subir</div>
+                    <div className="text-xs text-muted-foreground mt-1">Desde tu PC</div>
+                  </div>
+                )}
+              </button>
+              <div className="text-xs text-muted-foreground">
+                También puedes pegar una ruta en <code>/public</code> o una URL.
+              </div>
+              <Input
+                value={image}
+                onChange={(e) => setImage(e.target.value)}
+                placeholder="/Explicit_Cartesian_oval.png o https://..."
+              />
             </div>
           </div>
           <div className="grid gap-1 sm:grid-cols-2 sm:gap-3">
@@ -284,7 +354,7 @@ export function PublicationsEditor() {
               </>
             ) : (
               <Button onClick={onCreate} disabled={!canSave || saving}>
-                {saving ? "Guardando..." : "Crear publicación"}
+                {saving ? "Guardando..." : "Crear artículo"}
               </Button>
             )}
             <Button variant="outline" onClick={refresh} disabled={loading || saving}>
@@ -297,11 +367,11 @@ export function PublicationsEditor() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Publicaciones ({items.length})</CardTitle>
+          <CardTitle>Artículos ({items.length})</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
           {loading ? <div className="text-sm text-muted-foreground">Cargando...</div> : null}
-          {!loading && items.length === 0 ? <div className="text-sm text-muted-foreground">Sin publicaciones.</div> : null}
+          {!loading && items.length === 0 ? <div className="text-sm text-muted-foreground">Sin artículos.</div> : null}
           {items.map((p) => (
             <div key={p.id} className="flex items-start justify-between gap-4 rounded-lg border p-3">
               <div className="min-w-0">

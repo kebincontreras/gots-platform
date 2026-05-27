@@ -14,7 +14,7 @@ export default async function EditPage() {
       <Header />
       <div className="container mx-auto px-4 pt-28 pb-12">
         <h1 className="text-2xl font-semibold">Editar</h1>
-        <p className="text-muted-foreground mt-1">Crea noticias y agrega publicaciones.</p>
+        <p className="text-muted-foreground mt-1">Crea noticias y agrega artículos.</p>
         <div className="mt-6">
           <EditHub />
         </div>
@@ -23,4 +23,3 @@ export default async function EditPage() {
     </main>
   )
 }
-

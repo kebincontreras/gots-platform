@@ -205,7 +205,7 @@ export function NewsSection() {
               className="border-accent text-black hover:bg-accent hover:text-accent-foreground bg-transparent font-sans font-medium"
               asChild
             >
-              <a href={getPagePath('/noticias')}>
+              <a href={getPagePath("/noticias")}>
                 {t("news.viewAll")}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </a>
