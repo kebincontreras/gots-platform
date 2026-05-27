@@ -10,16 +10,20 @@ function isValidDateYYYYMMDD(date: string) {
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const userId = (session?.user as any)?.id as string | undefined
+    const role = (session?.user as any)?.role as string | undefined
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const { searchParams } = new URL(req.url)
     const from = (searchParams.get("from") ?? "").trim()
     const to = (searchParams.get("to") ?? "").trim()
+    const requestedUserId = (searchParams.get("userId") ?? "").trim()
     if (!isValidDateYYYYMMDD(from) || !isValidDateYYYYMMDD(to)) {
       return NextResponse.json({ error: "Invalid range. Use from/to YYYY-MM-DD." }, { status: 400 })
     }
 
-    return NextResponse.json({ dates: await listTaskDatesInRange(from, to) })
+    const createdBy = role === "PROFESSOR" ? (requestedUserId || undefined) : userId
+    return NextResponse.json({ dates: await listTaskDatesInRange(from, to, createdBy) })
   } catch {
     return NextResponse.json({ error: "Error cargando fechas." }, { status: 500 })
   }

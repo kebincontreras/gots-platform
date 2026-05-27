@@ -18,6 +18,7 @@ export async function POST(req: Request) {
     const emailConfirm = (body?.emailConfirm ?? "").toString().trim().toLowerCase()
     const password = (body?.password ?? "").toString()
     const passwordConfirm = (body?.passwordConfirm ?? "").toString()
+    const requestedProfile = (body?.profile ?? "").toString().trim().toUpperCase()
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: "Faltan campos." }, { status: 400 })
@@ -38,7 +39,30 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 12)
-    const user = await createUser({ name, email, passwordHash, role: getRoleForEmail(email) as any })
+    const emailRole = getRoleForEmail(email)
+    let role: any = emailRole
+    if (requestedProfile === "PROFESSIONAL" || requestedProfile === "PROFESIONAL") {
+      role = "PROFESSIONAL"
+    } else if (requestedProfile === "GUEST" || requestedProfile === "INVITADO") {
+      role = "GUEST"
+    } else if (requestedProfile === "EXTERNAL_RESEARCHER" || requestedProfile === "INVESTIGADOR_EXTERNO") {
+      role = "EXTERNAL_RESEARCHER"
+    } else if (requestedProfile === "PROFESSOR") {
+      if (emailRole !== "PROFESSOR") {
+        return NextResponse.json(
+          { error: "No autorizado para perfil Profesor. Usa un correo autorizado o elige otro perfil." },
+          { status: 403 },
+        )
+      }
+      role = "PROFESSOR"
+    } else if (requestedProfile === "STUDENT" || requestedProfile === "ESTUDIANTE" || requestedProfile === "") {
+      role = "STUDENT"
+    }
+
+    // Safety: if email is in professor allowlist, always keep PROFESSOR.
+    if (emailRole === "PROFESSOR") role = "PROFESSOR"
+
+    const user = await createUser({ name, email, passwordHash, role })
 
     return NextResponse.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role } })
   } catch (err: any) {

@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Instagram, Linkedin, Github } from "lucide-react"
+import { Instagram, Github } from "lucide-react"
 import { getImagePath } from "@/lib/utils"
 import { useLanguage } from "@/components/language-provider"
 
@@ -76,22 +76,13 @@ export function Footer() {
               <h3 className="font-serif font-semibold mb-4">{t("footer.followUs")}</h3>
               <div className="flex gap-4">
                 <a
-                  href="https://instagram.com"
+                  href="https://www.instagram.com/gots.uis?igsh=Nmhjc3VnNjJqcWto"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-primary-foreground/10 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
                   aria-label="Instagram"
                 >
                   <Instagram className="h-5 w-5" />
-                </a>
-                <a
-                  href="https://linkedin.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-primary-foreground/10 p-3 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
-                  aria-label="LinkedIn"
-                >
-                  <Linkedin className="h-5 w-5" />
                 </a>
                 <a
                   href="https://github.com"

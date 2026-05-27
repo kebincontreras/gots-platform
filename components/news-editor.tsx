@@ -20,6 +20,7 @@ type NewsItem = {
   author: string
   readTime: string
   content?: string | null
+  createdBy?: string | null
 }
 
 function parseTags(text: string) {
@@ -54,7 +55,7 @@ export function NewsEditor() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch("/api/news")
+      const res = await fetch("/api/news?mine=1")
       const body = await res.json()
       setItems(Array.isArray(body?.news) ? body.news : [])
     } catch (e: any) {

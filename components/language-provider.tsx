@@ -58,6 +58,12 @@ type TranslationKey =
   | "auth.passwordMin"
   | "auth.confirmEmail"
   | "auth.confirmPassword"
+  | "auth.profile"
+  | "auth.profileStudent"
+  | "auth.profileExternal"
+  | "auth.profileProfessor"
+  | "auth.profileProfessional"
+  | "auth.profileGuest"
   | "auth.mismatchEmail"
   | "auth.mismatchPassword"
   | "auth.signIn"
@@ -181,6 +187,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "auth.passwordMin": "Mot de passe (min. 8)",
     "auth.confirmEmail": "Confirmer l'email",
     "auth.confirmPassword": "Confirmer le mot de passe",
+    "auth.profile": "Profil",
+    "auth.profileStudent": "Etudiant",
+    "auth.profileExternal": "Chercheur externe",
+    "auth.profileProfessor": "Professeur",
+    "auth.profileProfessional": "Professionnel",
+    "auth.profileGuest": "Invite",
     "auth.mismatchEmail": "Les emails ne correspondent pas.",
     "auth.mismatchPassword": "Les mots de passe ne correspondent pas.",
     "auth.signIn": "Se connecter",
@@ -313,6 +325,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "auth.passwordMin": "Contraseña (mín. 8)",
     "auth.confirmEmail": "Confirmar email",
     "auth.confirmPassword": "Confirmar contraseña",
+    "auth.profile": "Perfil",
+    "auth.profileStudent": "Estudiante",
+    "auth.profileExternal": "Investigador externo",
+    "auth.profileProfessor": "Profesor",
+    "auth.profileProfessional": "Profesional",
+    "auth.profileGuest": "Invitado",
     "auth.mismatchEmail": "Los correos no coinciden.",
     "auth.mismatchPassword": "Las contraseñas no coinciden.",
     "auth.signIn": "Entrar",
@@ -444,6 +462,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     "auth.passwordMin": "Password (min. 8)",
     "auth.confirmEmail": "Confirm email",
     "auth.confirmPassword": "Confirm password",
+    "auth.profile": "Profile",
+    "auth.profileStudent": "Student",
+    "auth.profileExternal": "External researcher",
+    "auth.profileProfessor": "Professor",
+    "auth.profileProfessional": "Professional",
+    "auth.profileGuest": "Guest",
     "auth.mismatchEmail": "Emails do not match.",
     "auth.mismatchPassword": "Passwords do not match.",
     "auth.signIn": "Sign in",

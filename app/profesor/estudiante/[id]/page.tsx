@@ -15,7 +15,15 @@ export default async function EstudiantePage({ params }: { params: Promise<{ id:
   if (role !== "PROFESSOR") redirect("/dashboard")
 
   const student = await getUserById(id)
-  if (!student || (student.role !== "STUDENT" && student.role !== "EDITOR_NOTICIAS")) redirect("/profesor")
+  if (
+    !student ||
+    (student.role !== "STUDENT" &&
+      student.role !== "EXTERNAL_RESEARCHER" &&
+      student.role !== "PROFESSIONAL" &&
+      student.role !== "GUEST" &&
+      student.role !== "EDITOR_NOTICIAS")
+  )
+    redirect("/profesor")
 
   return (
     <main className="min-h-screen">
@@ -64,7 +72,7 @@ export default async function EstudiantePage({ params }: { params: Promise<{ id:
               Tareas semanales del grupo (se muestran también aquí para revisar el avance de este estudiante).
             </p>
             <div className="mt-4">
-              <TasksPanel canEdit />
+              <TasksPanel canEdit forUserId={student.id} />
             </div>
           </div>
         </div>

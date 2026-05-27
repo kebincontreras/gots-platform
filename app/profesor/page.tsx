@@ -2,18 +2,31 @@ import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { authOptions } from "@/lib/auth"
-import { listStudents } from "@/lib/store"
+import { listStudents, listStudentsByDirector } from "@/lib/store"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
+import { MembershipRequestsPanel } from "@/components/membership-requests-panel"
 
 export default async function ProfesorPage() {
   const session = await getServerSession(authOptions)
   const role = (session?.user as any)?.role as string | undefined
+  const professorId = (session?.user as any)?.id as string | undefined
+  const email = (session?.user as any)?.email as string | undefined
   if (!session?.user) redirect("/login?callbackUrl=/profesor")
   if (role !== "PROFESSOR") redirect("/dashboard")
 
-  const students = await listStudents()
+  const isGroupAdmin = (() => {
+    const normalized = (email ?? "").trim().toLowerCase()
+    if (!normalized) return false
+    const list = (process.env.GROUP_ADMIN_EMAILS ?? process.env.PROFESSOR_EMAILS ?? "")
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean)
+    return list.includes(normalized)
+  })()
+
+  const students = isGroupAdmin || !professorId ? await listStudents() : await listStudentsByDirector(professorId)
 
   return (
     <main className="min-h-screen">
@@ -45,6 +58,10 @@ export default async function ProfesorPage() {
             ))}
             {students.length === 0 && <div className="px-5 py-4 text-sm text-muted-foreground">Sin estudiantes.</div>}
           </div>
+        </div>
+
+        <div className="mt-6">
+          <MembershipRequestsPanel />
         </div>
       </div>
       <Footer />

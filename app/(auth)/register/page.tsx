@@ -6,6 +6,7 @@ import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useLanguage } from "@/components/language-provider"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function RegisterPage() {
   const { t } = useLanguage()
@@ -15,6 +16,9 @@ export default function RegisterPage() {
   const [emailConfirm, setEmailConfirm] = useState("")
   const [password, setPassword] = useState("")
   const [passwordConfirm, setPasswordConfirm] = useState("")
+  const [profile, setProfile] = useState<"PROFESSIONAL" | "GUEST" | "STUDENT" | "EXTERNAL_RESEARCHER" | "PROFESSOR">(
+    "PROFESSIONAL",
+  )
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -22,7 +26,7 @@ export default function RegisterPage() {
     <main className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md rounded-xl border bg-background p-6 shadow-sm">
         <h1 className="text-xl font-semibold">{t("auth.registerTitle")}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{t("auth.registerSubtitle")}</p>
+        {/* Subtitle removed per request */}
 
         <form
           className="mt-6 space-y-3"
@@ -44,7 +48,7 @@ export default function RegisterPage() {
             const res = await fetch("/api/register", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ name, email, emailConfirm, password, passwordConfirm }),
+              body: JSON.stringify({ name, email, emailConfirm, password, passwordConfirm, profile }),
             })
             if (!res.ok) {
               const body = await res.json().catch(() => ({}))
@@ -70,6 +74,21 @@ export default function RegisterPage() {
           <div className="space-y-1">
             <label className="text-sm font-medium">{t("auth.name")}</label>
             <Input value={name} onChange={(e) => setName(e.target.value)} type="text" autoComplete="name" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">{t("auth.profile")}</label>
+            <Select value={profile} onValueChange={(v: any) => setProfile(v)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={t("auth.profile")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="PROFESSOR">{t("auth.profileProfessor")}</SelectItem>
+              <SelectItem value="PROFESSIONAL">{t("auth.profileProfessional")}</SelectItem>
+              <SelectItem value="GUEST">{t("auth.profileGuest")}</SelectItem>
+              <SelectItem value="STUDENT">{t("auth.profileStudent")}</SelectItem>
+              <SelectItem value="EXTERNAL_RESEARCHER">{t("auth.profileExternal")}</SelectItem>
+            </SelectContent>
+          </Select>
           </div>
           <div className="space-y-1">
             <label className="text-sm font-medium">{t("auth.email")}</label>

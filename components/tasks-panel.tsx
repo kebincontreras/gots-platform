@@ -21,7 +21,13 @@ function toYYYYMMDD(date: Date) {
   return `${y}-${m}-${d}`
 }
 
-export function TasksPanel({ canEdit }: { canEdit: boolean }) {
+export function TasksPanel({
+  canEdit,
+  forUserId,
+}: {
+  canEdit: boolean
+  forUserId?: string
+}) {
   const { t } = useLanguage()
   const [selected, setSelected] = useState<Date>(new Date())
   const selectedKey = useMemo(() => toYYYYMMDD(selected), [selected])
@@ -42,7 +48,9 @@ export function TasksPanel({ canEdit }: { canEdit: boolean }) {
     const from = toYYYYMMDD(fromDate)
     const to = toYYYYMMDD(toDate)
 
-    const res = await fetch(`/api/tasks/dates?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
+    const qs = new URLSearchParams({ from, to })
+    if (forUserId) qs.set("userId", forUserId)
+    const res = await fetch(`/api/tasks/dates?${qs.toString()}`)
     const body = await res.json().catch(() => ({}))
     if (!res.ok) return
     setTaskDates(new Set((body.dates ?? []) as string[]))
@@ -51,7 +59,9 @@ export function TasksPanel({ canEdit }: { canEdit: boolean }) {
   async function refresh() {
     setLoading(true)
     setError(null)
-    const res = await fetch(`/api/tasks?date=${encodeURIComponent(selectedKey)}`)
+    const qs = new URLSearchParams({ date: selectedKey })
+    if (forUserId) qs.set("userId", forUserId)
+    const res = await fetch(`/api/tasks?${qs.toString()}`)
     const body = await res.json().catch(() => ({}))
     setLoading(false)
     if (!res.ok) {
@@ -114,7 +124,7 @@ export function TasksPanel({ canEdit }: { canEdit: boolean }) {
                 const res = await fetch("/api/tasks", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ date: selectedKey, title, description }),
+                  body: JSON.stringify({ date: selectedKey, title, description, userId: forUserId }),
                 })
                 const body = await res.json().catch(() => ({}))
                 setSaving(false)

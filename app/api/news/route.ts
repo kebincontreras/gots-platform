@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { createNews, listNews } from "@/lib/store"
+import { createNews, listNews, listNewsByUser } from "@/lib/store"
 import fs from "node:fs"
 import path from "node:path"
 
@@ -16,20 +16,30 @@ function readStaticNewsFallback() {
   return Array.isArray(parsed?.news) ? parsed.news : []
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const session = await getServerSession(authOptions)
+  const url = new URL(req.url)
+  const mineRequested = url.searchParams.get("mine") === "1"
+  const userId = (session?.user as any)?.id as string | undefined
+  const role = (session?.user as any)?.role as string | undefined
+  if (mineRequested && (!session?.user || !userId)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
   try {
-    const items = await listNews()
+    const items =
+      mineRequested && userId && role !== "PROFESSOR" ? await listNewsByUser(userId) : await listNews()
     return NextResponse.json({ news: items })
   } catch {
     // No DB configured: fall back to bundled JSON
-    const items = readStaticNewsFallback()
+    const items = mineRequested ? [] : readStaticNewsFallback()
     return NextResponse.json({ news: items })
   }
 }
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const userId = (session?.user as any)?.id as string | undefined
+  if (!session?.user || !userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   if (!canEditNews(true)) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const body = await req.json().catch(() => null)
@@ -69,7 +79,7 @@ export async function POST(req: Request) {
       author,
       readTime,
       content: normalizedContent,
-    })
+    }, userId)
     return NextResponse.json({ ok: true, news: created })
   } catch (e: any) {
     return NextResponse.json(

@@ -4,7 +4,14 @@ import { authOptions } from "@/lib/auth"
 import { updateUserRoleByEmail, type Role } from "@/lib/store"
 
 function isRole(value: unknown): value is Role {
-  return value === "STUDENT" || value === "PROFESSOR" || value === "EDITOR_NOTICIAS"
+  return (
+    value === "PROFESSIONAL" ||
+    value === "GUEST" ||
+    value === "STUDENT" ||
+    value === "EXTERNAL_RESEARCHER" ||
+    value === "PROFESSOR" ||
+    value === "EDITOR_NOTICIAS"
+  )
 }
 
 export async function POST(req: Request) {

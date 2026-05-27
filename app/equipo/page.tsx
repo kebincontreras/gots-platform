@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Header } from "@/components/header"
 import { getImagePath } from "@/lib/utils"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Mail, Linkedin, GraduationCap } from "lucide-react"
+import { Mail, GraduationCap } from "lucide-react"
 import { type Language, useLanguage } from "@/components/language-provider"
 
 interface TeamMember {
@@ -13,11 +13,17 @@ interface TeamMember {
   apellido: string | null
   programaAcademico?: string | null
   nivelEscolar?: string | null
-  email: string
+  email?: string | null
   scholar?: string | null
   linkedin?: string | null
   researchgate?: string | null
   activo: boolean
+  photoUrl?: string | null
+  displayName?: string | null
+  publicEmail?: string | null
+  academicLevel?: string | null
+  memberCategory?: string | null
+  role?: string | null
 }
 
 type GroupKey = "profesores" | "doctorado" | "maestria" | "fisica" | "otros"
@@ -33,7 +39,8 @@ function normalize(value?: string | null) {
 }
 
 function getProgram(member: TeamMember) {
-  return member.programaAcademico || member.nivelEscolar || "Sin programa"
+  if ((member.role ?? "").toUpperCase() === "PROFESSOR") return "Profesor"
+  return member.memberCategory || member.programaAcademico || member.academicLevel || member.nivelEscolar || "Sin programa"
 }
 
 function getGroup(program: string): GroupKey {
@@ -102,6 +109,7 @@ function matchScore(memberName: string, folderName: string) {
 }
 
 function getPhotoForMember(member: TeamMember) {
+  if (member.photoUrl) return member.photoUrl
   const fullName = `${member.nombre} ${member.apellido || ""}`.trim()
   const normalizedName = normalize(fullName)
 
@@ -141,13 +149,12 @@ function getPhotoForMember(member: TeamMember) {
 
 function getMemberProfileLinks(member: TeamMember) {
   const fullName = `${member.nombre} ${member.apellido || ""}`.trim()
-  const q = encodeURIComponent(fullName)
-
+  void fullName
   return {
-    mailto: `mailto:${member.email}`,
-    linkedin: member.linkedin || `https://www.linkedin.com/search/results/all/?keywords=${q}`,
-    researchgate: member.researchgate || `https://www.researchgate.net/search/researcher?q=${q}`,
-    scholar: member.scholar || `https://scholar.google.com/scholar?q=${q}`,
+    mailto: member.publicEmail || member.email ? `mailto:${member.publicEmail || member.email}` : null,
+    linkedin: member.linkedin || null,
+    researchgate: member.researchgate || null,
+    scholar: member.scholar || null,
   }
 }
 
@@ -199,6 +206,36 @@ export default function EquipoPage() {
   useEffect(() => {
     const loadTeam = async () => {
       try {
+        const apiRes = await fetch("/api/team")
+        if (apiRes.ok) {
+          const apiBody = await apiRes.json().catch(() => ({}))
+          const apiTeam = Array.isArray(apiBody?.team) ? apiBody.team : []
+          const mapped: TeamMember[] = apiTeam.map((m: any, idx: number) => {
+            const full = String(m.displayName || m.name || "").trim() || "Miembro"
+            const parts = full.split(/\s+/)
+            const first = parts[0] ?? full
+            const last = parts.slice(1).join(" ") || null
+            return {
+              id: idx + 100000,
+              nombre: first,
+              apellido: last,
+              email: m.publicEmail ?? null,
+              scholar: m.scholarUrl ?? null,
+              linkedin: m.linkedinUrl ?? null,
+              researchgate: m.researchgateUrl ?? null,
+              activo: true,
+              photoUrl: m.photoUrl ?? null,
+              displayName: m.displayName ?? null,
+              publicEmail: m.publicEmail ?? null,
+              academicLevel: m.academicLevel ?? null,
+              memberCategory: m.memberCategory ?? null,
+              role: m.role ?? null,
+            }
+          })
+          setTeamMembers(mapped)
+          return
+        }
+
         const response = await fetch(getImagePath("/equipo.json"))
         const data = await response.json()
         const active = (data.team as TeamMember[]).filter((member) => member.activo)
@@ -349,44 +386,40 @@ export default function EquipoPage() {
                       const links = getMemberProfileLinks(selectedMember)
                       return (
                         <div className="flex items-center justify-center gap-5 py-2">
-                          <a
-                            href={links.mailto}
-                            className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm transition-transform hover:scale-105"
-                            aria-label={labels.mailAria}
-                            title={labels.mailAria}
-                          >
-                            <Mail className="h-8 w-8 text-red-600" />
-                          </a>
-                          <a
-                            href={links.linkedin}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm transition-transform hover:scale-105"
-                            aria-label="LinkedIn"
-                            title="LinkedIn"
-                          >
-                            <Linkedin className="h-8 w-8 text-[#0A66C2]" />
-                          </a>
-                          <a
-                            href={links.researchgate}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm transition-transform hover:scale-105"
-                            aria-label="ResearchGate"
-                            title="ResearchGate"
-                          >
-                            <span className="text-lg font-extrabold text-[#00CCBB]">RG</span>
-                          </a>
-                          <a
-                            href={links.scholar}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm transition-transform hover:scale-105"
-                            aria-label="Google Scholar"
-                            title="Google Scholar"
-                          >
-                            <GraduationCap className="h-8 w-8 text-[#1A73E8]" />
-                          </a>
+                          {links.mailto ? (
+                            <a
+                              href={links.mailto}
+                              className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm transition-transform hover:scale-105"
+                              aria-label={labels.mailAria}
+                              title={labels.mailAria}
+                            >
+                              <Mail className="h-8 w-8 text-red-600" />
+                            </a>
+                          ) : null}
+                          {links.researchgate ? (
+                            <a
+                              href={links.researchgate}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm transition-transform hover:scale-105"
+                              aria-label="ResearchGate"
+                              title="ResearchGate"
+                            >
+                              <span className="text-lg font-extrabold text-[#00CCBB]">RG</span>
+                            </a>
+                          ) : null}
+                          {links.scholar ? (
+                            <a
+                              href={links.scholar}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm transition-transform hover:scale-105"
+                              aria-label="Google Scholar"
+                              title="Google Scholar"
+                            >
+                              <GraduationCap className="h-8 w-8 text-[#1A73E8]" />
+                            </a>
+                          ) : null}
                         </div>
                       )
                     })()}
