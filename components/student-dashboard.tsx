@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { LinksForm } from "@/components/links-form"
@@ -14,6 +14,7 @@ import { SecurityForm } from "@/components/security-form"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Menu } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 
 export function StudentDashboard({
   userId,
@@ -40,6 +41,22 @@ export function StudentDashboard({
   const advancesLabel = useMemo(() => (hasAdvances ? "Avances" : "Avances (sin enlaces)"), [hasAdvances])
   const [active, setActive] = useState<"perfil" | "seguridad" | "avances" | "calendario" | "chat">("perfil")
   const [menuOpen, setMenuOpen] = useState(false)
+  const params = useSearchParams()
+
+  // Allow deep-links like /dashboard?tab=avances
+  const tabParam = (params.get("tab") ?? "").toLowerCase()
+  const allowedTabs = useMemo(
+    () => new Set(["perfil", "seguridad", "avances", "calendario", "chat"]),
+    [],
+  )
+
+  // Sync with URL changes (e.g. /dashboard?tab=avances)
+  useEffect(() => {
+    if (allowedTabs.has(tabParam as any)) {
+      if (tabParam === "chat" && !groupMember) return
+      setActive(tabParam as any)
+    }
+  }, [allowedTabs, tabParam, groupMember])
 
   return (
     <main className="min-h-screen">

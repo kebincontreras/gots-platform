@@ -1,13 +1,24 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Menu, X } from "lucide-react"
+import { Menu, MoreVertical, X } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { getPagePath } from "@/lib/utils"
 import { useLanguage } from "@/components/language-provider"
 import { NotificationsBell } from "@/components/notifications-bell"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -97,6 +108,70 @@ export function Header() {
             {session?.user ? (
               <div className="flex items-center gap-3">
                 <NotificationsBell solid={Boolean(isScrolled || forceSolidHeader)} />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={isScrolled || forceSolidHeader ? "" : "text-white hover:text-white hover:bg-white/10"}
+                      aria-label="Configuración"
+                    >
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Configuración</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {(session.user as any).role === "PROFESSOR" ? (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <a href="/profesor">Panel</a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <a href="/profesor/tareas">Calendario</a>
+                        </DropdownMenuItem>
+                      </>
+                    ) : (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <a href="/dashboard?tab=perfil">Perfil</a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <a href="/dashboard?tab=avances">Avances</a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <a href="/dashboard?tab=calendario">Calendario</a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <a href="/dashboard?tab=seguridad">Seguridad</a>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+
+                    <DropdownMenuSeparator />
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>Editar</DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="w-56">
+                        <DropdownMenuItem asChild>
+                          <a href="/noticias/editor">Noticias</a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <a href="/publicaciones/editor">Artículos</a>
+                        </DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onSelect={(e) => {
+                        e.preventDefault()
+                        signOut({ callbackUrl: "/" })
+                      }}
+                    >
+                      Cerrar sesión
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <a
                   href={(session.user as any).role === "PROFESSOR" ? "/profesor" : "/dashboard"}
                   className={`text-sm font-sans font-medium transition-colors ${
@@ -105,16 +180,6 @@ export function Header() {
                 >
                   {(session.user as any).role === "PROFESSOR" ? t("header.students") : t("header.panel")}
                 </a>
-                {session.user ? (
-                  <a
-                    href="/editar"
-                    className={`text-sm font-sans font-medium transition-colors ${
-                      isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
-                    }`}
-                  >
-                    {t("header.edit")}
-                  </a>
-                ) : null}
                 {(session.user as any).role === "PROFESSOR" ? (
                   <a
                     href="/profesor/tareas"
@@ -125,15 +190,6 @@ export function Header() {
                     {t("header.tasks")}
                   </a>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  className={`text-sm font-sans font-medium transition-colors ${
-                    isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
-                  }`}
-                >
-                  {t("auth.signOut")}
-                </button>
               </div>
             ) : (
               <a
@@ -201,31 +257,72 @@ export function Header() {
                   <div className="text-sm text-muted-foreground">Notificaciones</div>
                   <NotificationsBell solid />
                 </div>
+                <div className="pt-2 text-xs font-semibold uppercase text-muted-foreground">Configuración</div>
+                {(session.user as any).role === "PROFESSOR" ? (
+                  <>
+                    <a
+                      href="/profesor"
+                      className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Panel
+                    </a>
+                    <a
+                      href="/profesor/tareas"
+                      className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Calendario
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    <a
+                      href="/dashboard?tab=perfil"
+                      className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Perfil
+                    </a>
+                    <a
+                      href="/dashboard?tab=avances"
+                      className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Avances
+                    </a>
+                    <a
+                      href="/dashboard?tab=calendario"
+                      className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Calendario
+                    </a>
+                    <a
+                      href="/dashboard?tab=seguridad"
+                      className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Seguridad
+                    </a>
+                  </>
+                )}
+
+                <div className="pt-2 text-xs font-semibold uppercase text-muted-foreground">Editar</div>
                 <a
-                  href={(session.user as any).role === "PROFESSOR" ? "/profesor" : "/dashboard"}
+                  href="/noticias/editor"
                   className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  {(session.user as any).role === "PROFESSOR" ? t("header.students") : t("header.panel")}
+                  Noticias
                 </a>
-                {session.user ? (
-                  <a
-                    href="/editar"
-                    className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {t("header.edit")}
-                  </a>
-                ) : null}
-                {(session.user as any).role === "PROFESSOR" ? (
-                  <a
-                    href="/profesor/tareas"
-                    className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {t("header.tasks")}
-                  </a>
-                ) : null}
+                <a
+                  href="/publicaciones/editor"
+                  className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Artículos
+                </a>
                 <button
                   type="button"
                   className="text-left text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
@@ -234,7 +331,7 @@ export function Header() {
                     signOut({ callbackUrl: "/" })
                   }}
                 >
-                  {t("auth.signOut")}
+                  Cerrar sesión
                 </button>
               </>
             ) : (
