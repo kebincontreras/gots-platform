@@ -19,8 +19,10 @@ export type ProfileDraft = {
 
 export type ProfessorOption = { id: string; name: string; email: string }
 
+const NONE_VALUE = "__none__"
+
 const ACADEMIC_LEVELS = [
-  { value: "", label: "No especificar" },
+  { value: NONE_VALUE, label: "No especificar" },
   { value: "PREGRADO", label: "Pregrado" },
   { value: "MAESTRIA", label: "Maestría" },
   { value: "DOCTORADO", label: "Doctorado" },
@@ -120,15 +122,17 @@ export function ProfileForm({ initial, professors }: { initial: ProfileDraft; pr
         <div className="grid gap-1">
           <div className="text-sm font-medium">Nivel</div>
           <Select
-            value={draft.academicLevel ?? ""}
-            onValueChange={(v) => setDraft((d) => ({ ...d, academicLevel: v || null }))}
+            value={draft.academicLevel ?? NONE_VALUE}
+            onValueChange={(v) =>
+              setDraft((d) => ({ ...d, academicLevel: v === NONE_VALUE ? null : v }))
+            }
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Selecciona" />
             </SelectTrigger>
             <SelectContent>
               {ACADEMIC_LEVELS.map((o) => (
-                <SelectItem key={o.value || "none"} value={o.value}>
+                <SelectItem key={o.value} value={o.value}>
                   {o.label}
                 </SelectItem>
               ))}
@@ -149,14 +153,14 @@ export function ProfileForm({ initial, professors }: { initial: ProfileDraft; pr
       <div className="grid gap-1">
         <div className="text-sm font-medium">Director</div>
         <Select
-          value={draft.directorId ?? ""}
-          onValueChange={(v) => setDraft((d) => ({ ...d, directorId: v || null }))}
+          value={draft.directorId ?? NONE_VALUE}
+          onValueChange={(v) => setDraft((d) => ({ ...d, directorId: v === NONE_VALUE ? null : v }))}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Selecciona tu director" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Sin director</SelectItem>
+            <SelectItem value={NONE_VALUE}>Sin director</SelectItem>
             {professorOptions.map((p) => (
               <SelectItem key={p.id} value={p.id}>
                 {p.name} ({p.email})
@@ -177,4 +181,3 @@ export function ProfileForm({ initial, professors }: { initial: ProfileDraft; pr
     </form>
   )
 }
-
