@@ -1942,12 +1942,33 @@ export async function listTasksByDate(date: string, createdBy?: string): Promise
     const sql = getPgSql()
     if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
     await ensurePgSchema()
-    const rows = await sql<
-      Array<{ id: string; date: string; title: string; description: string | null; created_by: string; created_at: string }>
-    >`SELECT id, date, title, description, created_by, created_at
-      FROM tasks
-      WHERE date = ${date} AND (${createdBy ?? null} IS NULL OR created_by = ${createdBy ?? null})
-      ORDER BY created_at DESC`
+    const rows = createdBy
+      ? await sql<
+          Array<{
+            id: string
+            date: string
+            title: string
+            description: string | null
+            created_by: string
+            created_at: string
+          }>
+        >`SELECT id, date, title, description, created_by, created_at
+          FROM tasks
+          WHERE date = ${date} AND created_by = ${createdBy}
+          ORDER BY created_at DESC`
+      : await sql<
+          Array<{
+            id: string
+            date: string
+            title: string
+            description: string | null
+            created_by: string
+            created_at: string
+          }>
+        >`SELECT id, date, title, description, created_by, created_at
+          FROM tasks
+          WHERE date = ${date}
+          ORDER BY created_at DESC`
     return rows.map((r) => ({
       id: r.id,
       date: r.date,
@@ -1981,11 +2002,15 @@ export async function listTaskDatesInRange(from: string, to: string, createdBy?:
     const sql = getPgSql()
     if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
     await ensurePgSchema()
-    const rows = await sql<Array<{ date: string }>>`SELECT DISTINCT date
-      FROM tasks
-      WHERE date >= ${from} AND date <= ${to}
-        AND (${createdBy ?? null} IS NULL OR created_by = ${createdBy ?? null})
-      ORDER BY date ASC`
+    const rows = createdBy
+      ? await sql<Array<{ date: string }>>`SELECT DISTINCT date
+          FROM tasks
+          WHERE date >= ${from} AND date <= ${to} AND created_by = ${createdBy}
+          ORDER BY date ASC`
+      : await sql<Array<{ date: string }>>`SELECT DISTINCT date
+          FROM tasks
+          WHERE date >= ${from} AND date <= ${to}
+          ORDER BY date ASC`
     return rows.map((r) => r.date)
   }
 
