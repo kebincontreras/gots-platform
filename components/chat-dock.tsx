@@ -9,6 +9,8 @@ import { MessagesSquare, UserRound, X } from "lucide-react"
 type Member = { id: string; name: string; displayName?: string | null; memberCategory?: string | null; role?: string | null }
 type Message = { id: string; userId: string; userName: string; message: string; createdAt: string }
 
+const GLOBAL_CHAT_MEMBER: Member = { id: "__gost_global__", name: "Gost", displayName: "Gost", memberCategory: "Grupo", role: "GROUP" }
+
 export function ChatDock() {
   const { data: session } = useSession()
   const role = (session?.user as any)?.role as string | undefined
@@ -97,8 +99,10 @@ export function ChatDock() {
 
   const sortedMembers = useMemo(() => {
     const meId = String((session?.user as any)?.id ?? "")
-    const list = [...members].filter((m) => String(m.id) !== meId)
+    const list = [GLOBAL_CHAT_MEMBER, ...members.filter((m) => String(m.id) !== meId)]
     list.sort((a, b) => {
+      if (a.id === GLOBAL_CHAT_MEMBER.id) return -1
+      if (b.id === GLOBAL_CHAT_MEMBER.id) return 1
       const ar = String(a.role || "").toUpperCase()
       const br = String(b.role || "").toUpperCase()
       if (ar === "PROFESSOR" && br !== "PROFESSOR") return -1
@@ -123,7 +127,7 @@ export function ChatDock() {
         <div className="w-[360px] max-w-[92vw] h-[520px] rounded-xl border bg-background shadow-xl overflow-hidden flex flex-col">
           <div className="px-3 py-2 border-b flex items-center justify-between">
             <div className="font-medium text-sm">
-              {mode === "dm" && recipient ? `Chat con ${recipient.displayName || recipient.name}` : "Gost (para todos)"}
+              {mode === "dm" && recipient ? `Chat con ${recipient.displayName || recipient.name}` : "Gost"}
             </div>
             <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Cerrar">
               <X className="h-4 w-4" />
@@ -234,6 +238,15 @@ export function ChatDock() {
                         isSelected ? "border-primary bg-primary/5" : ""
                       }`}
                       onClick={async () => {
+                        if (m.id === GLOBAL_CHAT_MEMBER.id) {
+                          setRecipient(null)
+                          setMode("global")
+                          setDmThreadId(null)
+                          setOpeningDm(false)
+                          setError(null)
+                          await loadMessages({ mode: "global" })
+                          return
+                        }
                         setRecipient(m)
                         setMode("dm")
                         setDmThreadId(null)
@@ -269,7 +282,11 @@ export function ChatDock() {
                     >
                       <div className="font-medium truncate">{m.displayName || m.name}</div>
                       <div className="text-[10px] text-muted-foreground truncate">
-                        {String(m.role || "").toUpperCase() === "PROFESSOR" ? "Profesor" : m.memberCategory || "Miembro"}
+                        {m.id === GLOBAL_CHAT_MEMBER.id
+                          ? "Grupo (todos)"
+                          : String(m.role || "").toUpperCase() === "PROFESSOR"
+                            ? "Profesor"
+                            : m.memberCategory || "Miembro"}
                       </div>
                     </button>
                   )
