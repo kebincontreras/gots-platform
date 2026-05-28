@@ -66,14 +66,14 @@ export default function RegisterPage() {
               email,
               password,
               redirect: false,
-              callbackUrl: "/dashboard",
+              callbackUrl: "/dashboard?tab=inicio",
             })
             setLoading(false)
             if (!signInRes || signInRes.error) {
               router.push("/login")
               return
             }
-            router.push(signInRes.url ?? "/dashboard")
+            router.push(signInRes.url ?? "/dashboard?tab=inicio")
           }}
         >
           <div className="space-y-1">

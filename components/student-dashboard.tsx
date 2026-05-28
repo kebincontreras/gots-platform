@@ -40,14 +40,14 @@ export function StudentDashboard({
   const greeting = t("dashboard.studentGreeting").replace("{name}", name)
   const hasAdvances = Boolean(driveEmbedUrl || docEmbedUrl)
   const advancesLabel = useMemo(() => (hasAdvances ? "Avances" : "Avances (sin enlaces)"), [hasAdvances])
-  const [active, setActive] = useState<"perfil" | "seguridad" | "avances" | "calendario" | "chat">("perfil")
+  const [active, setActive] = useState<"inicio" | "perfil" | "seguridad" | "avances" | "calendario" | "chat">("inicio")
   const params = useSearchParams()
   const [showLinksEditor, setShowLinksEditor] = useState(!hasAdvances)
 
   // Allow deep-links like /dashboard?tab=avances
   const tabParam = (params.get("tab") ?? "").toLowerCase()
   const allowedTabs = useMemo(
-    () => new Set(["perfil", "seguridad", "avances", "calendario", "chat"]),
+    () => new Set(["inicio", "perfil", "seguridad", "avances", "calendario", "chat"]),
     [],
   )
 
@@ -71,9 +71,36 @@ export function StudentDashboard({
         <p className="text-muted-foreground mt-1">{greeting}</p>
 
         <div className="mt-6 grid gap-6">
-          <MembershipRequestCard groupMember={groupMember} pending={pendingMembershipRequest} />
-
           <Tabs value={active} onValueChange={(v: any) => setActive(v)}>
+            <TabsContent value="inicio">
+              <div className="rounded-xl border p-5">
+                <h2 className="font-semibold">Inicio</h2>
+                <p className="text-sm text-muted-foreground mt-1">Resumen de tu cuenta y accesos rápidos.</p>
+                <div className="mt-4 grid gap-4">
+                  <MembershipRequestCard groupMember={groupMember} pending={pendingMembershipRequest} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button type="button" variant="outline" onClick={() => setActive("perfil")}>
+                      Perfil
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setActive("avances")}>
+                      Avances
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setActive("calendario")}>
+                      Calendario
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setActive("seguridad")}>
+                      Seguridad
+                    </Button>
+                  </div>
+                  {groupMember ? (
+                    <Button type="button" variant="outline" onClick={() => setActive("chat")}>
+                      Chat del grupo
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </TabsContent>
+
             <TabsContent value="perfil">
               <div className="rounded-xl border p-5">
                 <h2 className="font-semibold">Perfil</h2>

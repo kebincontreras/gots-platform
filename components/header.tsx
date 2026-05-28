@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { getPagePath } from "@/lib/utils"
 import { useLanguage } from "@/components/language-provider"
 import { NotificationsBell } from "@/components/notifications-bell"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +22,8 @@ export function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isGroupMember, setIsGroupMember] = useState(false)
+  const [userDisplayName, setUserDisplayName] = useState<string | null>(null)
+  const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null)
   const { data: session } = useSession()
   const { language, setLanguage, t } = useLanguage()
   const pathname = usePathname()
@@ -38,11 +41,13 @@ export function Header() {
     const role = (session?.user as any)?.role as string | undefined
     if (!session?.user) {
       setIsGroupMember(false)
+      setUserDisplayName(null)
+      setUserPhotoUrl(null)
       return
     }
     if (role === "PROFESSOR") {
       setIsGroupMember(true)
-      return
+      // still load display/photo for header
     }
     ;(async () => {
       try {
@@ -55,7 +60,24 @@ export function Header() {
         // ignore
       }
     })()
+
+    ;(async () => {
+      try {
+        const res = await fetch("/api/me/profile")
+        const body = await res.json().catch(() => ({}))
+        if (!res.ok) return
+        const profile = body?.profile ?? {}
+        setUserDisplayName((profile?.displayName ?? null) as string | null)
+        setUserPhotoUrl((profile?.photoUrl ?? null) as string | null)
+      } catch {
+        // ignore
+      }
+    })()
   }, [session?.user])
+
+  const fullName = (userDisplayName || (session?.user as any)?.name || (session?.user as any)?.email || "").toString().trim()
+  const firstName = (fullName.split(/\s+/)[0] || fullName || "Cuenta").trim()
+  const initials = (firstName[0] || "U").toUpperCase()
 
   const navItems = [
     { href: "/", label: t("nav.home"), isSection: false },
@@ -133,15 +155,36 @@ export function Header() {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className={isScrolled || forceSolidHeader ? "" : "text-white hover:text-white hover:bg-white/10"}
+                      className={
+                        isScrolled || forceSolidHeader
+                          ? "h-9 px-2"
+                          : "h-9 px-2 text-white hover:text-white hover:bg-white/10"
+                      }
                       aria-label="Configuración"
                     >
-                      <MoreVertical className="h-5 w-5" />
+                      <div className="flex items-center gap-2">
+                        <Avatar className="size-6">
+                          {userPhotoUrl ? <AvatarImage src={userPhotoUrl} alt={fullName || "Usuario"} /> : null}
+                          <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-sans font-medium max-w-[120px] truncate">{firstName}</span>
+                        <MoreVertical className="h-5 w-5 opacity-80" />
+                      </div>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56" sideOffset={8} collisionPadding={12}>
-                    <DropdownMenuLabel>Configuración</DropdownMenuLabel>
+                    <DropdownMenuLabel>
+                      <div className="flex items-center gap-3 py-1">
+                        <Avatar className="size-9">
+                          {userPhotoUrl ? <AvatarImage src={userPhotoUrl} alt={fullName || "Usuario"} /> : null}
+                          <AvatarFallback className="text-sm">{initials}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold truncate">{fullName || "Cuenta"}</div>
+                          <div className="text-xs text-muted-foreground truncate">{String((session.user as any)?.email ?? "")}</div>
+                        </div>
+                      </div>
+                    </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {(session.user as any).role === "PROFESSOR" ? (
                       <>
@@ -154,6 +197,9 @@ export function Header() {
                       </>
                     ) : (
                       <>
+                        <DropdownMenuItem asChild>
+                          <a href="/dashboard?tab=inicio">Inicio</a>
+                        </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <a href="/dashboard?tab=perfil">Perfil</a>
                         </DropdownMenuItem>
@@ -250,13 +296,23 @@ export function Header() {
               ))}
             </div>
 
-            {session?.user ? (
-              <>
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">Notificaciones</div>
-                  <NotificationsBell solid />
-                </div>
-                <div className="pt-2 text-xs font-semibold uppercase text-muted-foreground">Configuración</div>
+              {session?.user ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">Notificaciones</div>
+                    <NotificationsBell solid />
+                  </div>
+                  <div className="flex items-center gap-2 pt-2">
+                    <Avatar className="size-7">
+                      {userPhotoUrl ? <AvatarImage src={userPhotoUrl} alt={fullName || "Usuario"} /> : null}
+                      <AvatarFallback className="text-[11px]">{initials}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <div className="text-sm font-sans font-semibold truncate">{fullName || "Cuenta"}</div>
+                      <div className="text-xs text-muted-foreground truncate">{String((session.user as any)?.email ?? "")}</div>
+                    </div>
+                  </div>
+                  <div className="pt-2 text-xs font-semibold uppercase text-muted-foreground">Configuración</div>
                 {(session.user as any).role === "PROFESSOR" ? (
                   <>
                     <a
@@ -276,6 +332,13 @@ export function Header() {
                   </>
                 ) : (
                   <>
+                    <a
+                      href="/dashboard?tab=inicio"
+                      className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Inicio
+                    </a>
                     <a
                       href="/dashboard?tab=perfil"
                       className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"

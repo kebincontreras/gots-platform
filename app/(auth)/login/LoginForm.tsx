@@ -11,7 +11,7 @@ export function LoginForm() {
   const { t } = useLanguage()
   const router = useRouter()
   const params = useSearchParams()
-  const callbackUrl = params.get("callbackUrl") ?? "/dashboard"
+  const callbackUrl = params.get("callbackUrl") ?? "/dashboard?tab=inicio"
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
