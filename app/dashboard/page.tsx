@@ -53,6 +53,7 @@ export default async function DashboardPage() {
         photoUrl: user.photoUrl,
         academicLevel: user.academicLevel,
         memberCategory: user.memberCategory,
+        career: user.career,
         specialty: user.specialty,
         directorId: user.directorId,
         directorName: user.directorName,

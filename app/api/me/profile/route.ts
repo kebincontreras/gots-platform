@@ -43,6 +43,7 @@ export async function GET() {
       photoUrl: user.photoUrl,
       academicLevel: user.academicLevel,
       memberCategory: user.memberCategory,
+      career: user.career,
       specialty: user.specialty,
       directorId: user.directorId,
       directorName: user.directorName,
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
   const photoUrlRaw = body?.photoUrl != null ? String(body.photoUrl) : undefined
   const academicLevel = body?.academicLevel != null ? String(body.academicLevel).trim() : undefined
   const memberCategory = body?.memberCategory != null ? String(body.memberCategory).trim() : undefined
+  const career = body?.career != null ? String(body.career).trim() : undefined
   const specialty = body?.specialty != null ? String(body.specialty).trim() : undefined
   const directorId = body?.directorId != null ? String(body.directorId).trim() : undefined
   const directorName = body?.directorName != null ? String(body.directorName).trim() : undefined
@@ -78,6 +80,7 @@ export async function POST(req: Request) {
     photoUrl: photoUrlRaw === undefined ? undefined : normalizePhoto(photoUrlRaw),
     academicLevel: academicLevel === "" ? null : academicLevel,
     memberCategory: memberCategory === "" ? null : memberCategory,
+    career: career === "" ? null : career,
     specialty: specialty === "" ? null : specialty,
     directorId: directorId === "" ? null : directorId,
     directorName: directorName === "" ? null : directorName,
