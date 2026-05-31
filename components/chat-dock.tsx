@@ -20,11 +20,15 @@ const GLOBAL_CHAT_MEMBER: Member = {
 export function ChatDock() {
   const { data: session } = useSession()
   const role = (session?.user as any)?.role as string | undefined
+  const meId = String((session?.user as any)?.id ?? "")
   const [open, setOpen] = useState(false)
   const [groupMember, setGroupMember] = useState(false)
 
   const [members, setMembers] = useState<Member[]>([])
   const [messages, setMessages] = useState<Message[]>([])
+  const [unreadGlobalSenders, setUnreadGlobalSenders] = useState<Set<string>>(new Set())
+  const [lastSeenGlobalAt, setLastSeenGlobalAt] = useState<string | null>(null)
+  const lastSeenGlobalAtRef = useRef<string | null>(null)
   const [text, setText] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [recipient, setRecipient] = useState<Member | null>(null)
@@ -34,6 +38,25 @@ export function ChatDock() {
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
   const enabled = Boolean(session?.user) && (role === "PROFESSOR" || groupMember)
+
+  const storageKeyLastSeenGlobal = useMemo(() => {
+    if (!meId) return null
+    return `gots:chat:lastSeenGlobalAt:${meId}`
+  }, [meId])
+
+  useEffect(() => {
+    if (!storageKeyLastSeenGlobal) return
+    try {
+      const raw = window.localStorage.getItem(storageKeyLastSeenGlobal)
+      setLastSeenGlobalAt(raw ? String(raw) : null)
+    } catch {
+      // ignore
+    }
+  }, [storageKeyLastSeenGlobal])
+
+  useEffect(() => {
+    lastSeenGlobalAtRef.current = lastSeenGlobalAt
+  }, [lastSeenGlobalAt])
 
   useEffect(() => {
     if (!session?.user) {
@@ -66,6 +89,47 @@ export function ChatDock() {
     }
   }
 
+  const loadGlobalUnread = async () => {
+    if (!meId) return
+    try {
+      const res = await fetch("/api/chat?limit=120")
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) return
+      const list: Message[] = Array.isArray(body?.messages) ? body.messages : []
+      const lastSeen = lastSeenGlobalAtRef.current ? Date.parse(lastSeenGlobalAtRef.current) : null
+      const unread = new Set<string>()
+      if (lastSeen != null && Number.isFinite(lastSeen)) {
+        for (const m of list) {
+          if (!m?.createdAt || !m?.userId) continue
+          const ts = Date.parse(String(m.createdAt))
+          if (!Number.isFinite(ts)) continue
+          if (ts > lastSeen && String(m.userId) !== meId) unread.add(String(m.userId))
+        }
+      }
+      setUnreadGlobalSenders(unread)
+    } catch {
+      // ignore
+    }
+  }
+
+  const markGlobalAsSeen = (msgs: Message[]) => {
+    const latest = [...(msgs ?? [])]
+      .map((m) => Date.parse(String(m?.createdAt ?? "")))
+      .filter((n) => Number.isFinite(n))
+      .sort((a, b) => b - a)[0]
+    if (!latest || !Number.isFinite(latest)) return
+    const iso = new Date(latest).toISOString()
+    setLastSeenGlobalAt(iso)
+    setUnreadGlobalSenders(new Set())
+    if (storageKeyLastSeenGlobal) {
+      try {
+        window.localStorage.setItem(storageKeyLastSeenGlobal, iso)
+      } catch {
+        // ignore
+      }
+    }
+  }
+
   const loadMessages = async (opts?: { mode?: "global" | "dm"; threadId?: string | null }) => {
     setError(null)
     try {
@@ -81,7 +145,11 @@ export function ChatDock() {
         setError(body?.error ?? "No se pudo cargar el chat.")
         return
       }
-      setMessages(body.messages ?? [])
+      const list: Message[] = Array.isArray(body?.messages) ? body.messages : []
+      setMessages(list)
+      if (open && m === "global") {
+        markGlobalAsSeen(list)
+      }
     } catch {
       setError("No se pudo cargar el chat.")
     }
@@ -91,9 +159,11 @@ export function ChatDock() {
     if (!enabled || !open) return
     loadMembers()
     loadMessages()
+    loadGlobalUnread()
     const id = window.setInterval(() => {
       loadMembers()
       loadMessages()
+      loadGlobalUnread()
     }, 5000)
     return () => window.clearInterval(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,7 +174,6 @@ export function ChatDock() {
   }, [messages.length])
 
   const sortedMembers = useMemo(() => {
-    const meId = String((session?.user as any)?.id ?? "")
     const list = [GLOBAL_CHAT_MEMBER, ...members.filter((m) => String(m.id) !== meId)]
     list.sort((a, b) => {
       if (a.id === GLOBAL_CHAT_MEMBER.id) return -1
@@ -236,6 +305,7 @@ export function ChatDock() {
               <div className="grid gap-1">
                 {sortedMembers.map((m) => {
                   const isSelected = recipient?.id === m.id
+                  const showDot = m.id !== GLOBAL_CHAT_MEMBER.id && unreadGlobalSenders.has(String(m.id))
                   return (
                     <button
                       key={m.id}
@@ -286,7 +356,10 @@ export function ChatDock() {
                       }}
                       aria-label={`Escribir a ${m.displayName || m.name}`}
                     >
-                      <div className="font-medium truncate">{m.displayName || m.name}</div>
+                      <div className="font-medium truncate flex items-center justify-between gap-2">
+                        <span className="truncate">{m.displayName || m.name}</span>
+                        {showDot ? <span className="h-2.5 w-2.5 rounded-full bg-green-500 shrink-0" /> : null}
+                      </div>
                       <div className="text-[10px] text-muted-foreground truncate">
                         {m.id === GLOBAL_CHAT_MEMBER.id
                           ? "Grupo (todos)"

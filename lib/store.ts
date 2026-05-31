@@ -18,6 +18,7 @@ export type User = {
   photoUrl: string | null
   academicLevel: string | null
   memberCategory: string | null
+  specialty: string | null
   directorId: string | null
   directorName: string | null
   groupMember: boolean
@@ -212,6 +213,7 @@ async function ensurePgSchema() {
       photo_url TEXT,
       academic_level TEXT,
       member_category TEXT,
+      specialty TEXT,
       director_id TEXT,
       director_name TEXT,
       group_member BOOLEAN NOT NULL DEFAULT FALSE,
@@ -229,6 +231,7 @@ async function ensurePgSchema() {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS photo_url TEXT;`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS academic_level TEXT;`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS member_category TEXT;`
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS specialty TEXT;`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS director_id TEXT;`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS director_name TEXT;`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS group_member BOOLEAN NOT NULL DEFAULT FALSE;`
@@ -403,6 +406,7 @@ function getSqliteDb() {
       photo_url TEXT,
       academic_level TEXT,
       member_category TEXT,
+      specialty TEXT,
       director_id TEXT,
       director_name TEXT,
       group_member INTEGER NOT NULL DEFAULT 0,
@@ -529,6 +533,7 @@ function getSqliteDb() {
   ensureUserCol("photo_url", `ALTER TABLE users ADD COLUMN photo_url TEXT;`)
   ensureUserCol("academic_level", `ALTER TABLE users ADD COLUMN academic_level TEXT;`)
   ensureUserCol("member_category", `ALTER TABLE users ADD COLUMN member_category TEXT;`)
+  ensureUserCol("specialty", `ALTER TABLE users ADD COLUMN specialty TEXT;`)
   ensureUserCol("director_id", `ALTER TABLE users ADD COLUMN director_id TEXT;`)
   ensureUserCol("director_name", `ALTER TABLE users ADD COLUMN director_name TEXT;`)
   ensureUserCol("group_member", `ALTER TABLE users ADD COLUMN group_member INTEGER NOT NULL DEFAULT 0;`)
@@ -580,6 +585,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
         photo_url: string | null
         academic_level: string | null
         member_category: string | null
+        specialty: string | null
         director_id: string | null
         director_name: string | null
         group_member: boolean
@@ -587,7 +593,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
         updated_at: string
       }>
     >`SELECT id, email, name, password_hash, role, drive_embed_url, doc_embed_url,
-        display_name, public_email, linkedin_url, researchgate_url, scholar_url, photo_url, academic_level, member_category, director_id, director_name, group_member,
+        display_name, public_email, linkedin_url, researchgate_url, scholar_url, photo_url, academic_level, member_category, specialty, director_id, director_name, group_member,
         created_at, updated_at
       FROM users WHERE email = ${email} LIMIT 1`
 
@@ -605,6 +611,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
       photoUrl: row.photo_url ?? null,
       academicLevel: row.academic_level ?? null,
       memberCategory: row.member_category ?? null,
+      specialty: row.specialty ?? null,
       directorId: row.director_id ?? null,
       directorName: row.director_name ?? null,
       groupMember: Boolean(row.group_member),
@@ -638,7 +645,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
   const row = db
     .prepare(
       `SELECT id, email, name, password_hash, role, drive_embed_url, doc_embed_url,
-        display_name, public_email, linkedin_url, researchgate_url, scholar_url, photo_url, academic_level, member_category, director_id, director_name, group_member,
+        display_name, public_email, linkedin_url, researchgate_url, scholar_url, photo_url, academic_level, member_category, specialty, director_id, director_name, group_member,
         created_at, updated_at
        FROM users WHERE email = ? LIMIT 1`,
     )
@@ -656,6 +663,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     photoUrl: row.photo_url ?? null,
     academicLevel: row.academic_level ?? null,
     memberCategory: row.member_category ?? null,
+    specialty: row.specialty ?? null,
     directorId: row.director_id ?? null,
     directorName: row.director_name ?? null,
     groupMember: Boolean(row.group_member),
@@ -707,6 +715,7 @@ export async function getUserById(id: string): Promise<User | null> {
         photo_url: string | null
         academic_level: string | null
         member_category: string | null
+        specialty: string | null
         director_id: string | null
         director_name: string | null
         group_member: boolean
@@ -714,7 +723,7 @@ export async function getUserById(id: string): Promise<User | null> {
         updated_at: string
       }>
     >`SELECT id, email, name, password_hash, role, drive_embed_url, doc_embed_url,
-        display_name, public_email, linkedin_url, researchgate_url, scholar_url, photo_url, academic_level, member_category, director_id, director_name, group_member,
+        display_name, public_email, linkedin_url, researchgate_url, scholar_url, photo_url, academic_level, member_category, specialty, director_id, director_name, group_member,
         created_at, updated_at
       FROM users WHERE id = ${id} LIMIT 1`
 
@@ -732,6 +741,7 @@ export async function getUserById(id: string): Promise<User | null> {
       photoUrl: row.photo_url ?? null,
       academicLevel: row.academic_level ?? null,
       memberCategory: row.member_category ?? null,
+      specialty: row.specialty ?? null,
       directorId: row.director_id ?? null,
       directorName: row.director_name ?? null,
       groupMember: Boolean(row.group_member),
@@ -764,7 +774,7 @@ export async function getUserById(id: string): Promise<User | null> {
   const row = db
     .prepare(
       `SELECT id, email, name, password_hash, role, drive_embed_url, doc_embed_url,
-        display_name, public_email, linkedin_url, researchgate_url, scholar_url, photo_url, academic_level, member_category, director_id, director_name, group_member,
+        display_name, public_email, linkedin_url, researchgate_url, scholar_url, photo_url, academic_level, member_category, specialty, director_id, director_name, group_member,
         created_at, updated_at
        FROM users WHERE id = ? LIMIT 1`,
     )
@@ -782,6 +792,7 @@ export async function getUserById(id: string): Promise<User | null> {
     photoUrl: row.photo_url ?? null,
     academicLevel: row.academic_level ?? null,
     memberCategory: row.member_category ?? null,
+    specialty: row.specialty ?? null,
     directorId: row.director_id ?? null,
     directorName: row.director_name ?? null,
     groupMember: Boolean(row.group_member),
@@ -817,6 +828,7 @@ export async function createUser(input: {
   role?: Role
   academicLevel?: string | null
   memberCategory?: string | null
+  specialty?: string | null
 }): Promise<User> {
   const id = crypto.randomUUID()
   const createdAt = nowIso()
@@ -824,6 +836,7 @@ export async function createUser(input: {
   const role = input.role ?? "STUDENT"
   const academicLevel = input.academicLevel ?? null
   const memberCategory = input.memberCategory ?? null
+  const specialty = input.specialty ?? null
   const displayName = input.name
 
   if (shouldUsePostgres()) {
@@ -832,15 +845,15 @@ export async function createUser(input: {
     await ensurePgSchema()
 
     await sql`
-      INSERT INTO users (id, email, name, display_name, password_hash, role, academic_level, member_category, created_at, updated_at)
-      VALUES (${id}, ${input.email}, ${input.name}, ${displayName}, ${input.passwordHash}, ${role}, ${academicLevel}, ${memberCategory}, ${createdAt}, ${updatedAt})
+      INSERT INTO users (id, email, name, display_name, password_hash, role, academic_level, member_category, specialty, created_at, updated_at)
+      VALUES (${id}, ${input.email}, ${input.name}, ${displayName}, ${input.passwordHash}, ${role}, ${academicLevel}, ${memberCategory}, ${specialty}, ${createdAt}, ${updatedAt})
     `
   } else {
     const db = getSqliteDb()
     db.prepare(
-      `INSERT INTO users (id, email, name, display_name, password_hash, role, academic_level, member_category, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(id, input.email, input.name, displayName, input.passwordHash, role, academicLevel, memberCategory, createdAt, updatedAt)
+      `INSERT INTO users (id, email, name, display_name, password_hash, role, academic_level, member_category, specialty, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(id, input.email, input.name, displayName, input.passwordHash, role, academicLevel, memberCategory, specialty, createdAt, updatedAt)
   }
 
   return {
@@ -855,6 +868,7 @@ export async function createUser(input: {
     photoUrl: null,
     academicLevel,
     memberCategory,
+    specialty,
     directorId: null,
     directorName: null,
     groupMember: false,
@@ -919,6 +933,7 @@ export async function updateUserProfile(
     photoUrl?: string | null
     academicLevel?: string | null
     memberCategory?: string | null
+    specialty?: string | null
     directorId?: string | null
     directorName?: string | null
   },
@@ -937,6 +952,7 @@ export async function updateUserProfile(
       photo_url = COALESCE(${input.photoUrl ?? null}, photo_url),
       academic_level = COALESCE(${input.academicLevel ?? null}, academic_level),
       member_category = COALESCE(${input.memberCategory ?? null}, member_category),
+      specialty = COALESCE(${input.specialty ?? null}, specialty),
       director_id = COALESCE(${input.directorId ?? null}, director_id),
       director_name = COALESCE(${input.directorName ?? null}, director_name),
       updated_at = ${updatedAt}
@@ -955,6 +971,7 @@ export async function updateUserProfile(
       photo_url = COALESCE(?, photo_url),
       academic_level = COALESCE(?, academic_level),
       member_category = COALESCE(?, member_category),
+      specialty = COALESCE(?, specialty),
       director_id = COALESCE(?, director_id),
       director_name = COALESCE(?, director_name),
       updated_at = ?
@@ -968,6 +985,7 @@ export async function updateUserProfile(
     input.photoUrl ?? null,
     input.academicLevel ?? null,
     input.memberCategory ?? null,
+    input.specialty ?? null,
     input.directorId ?? null,
     input.directorName ?? null,
     updatedAt,
@@ -1137,7 +1155,12 @@ export async function resolveMembershipRequest(input: {
 }
 
 export async function listTeamMembers(): Promise<
-  Array<Pick<User, "id" | "name" | "displayName" | "publicEmail" | "photoUrl" | "academicLevel" | "memberCategory" | "researchgateUrl" | "scholarUrl" | "linkedinUrl" | "role">>
+  Array<
+    Pick<
+      User,
+      "id" | "name" | "displayName" | "publicEmail" | "photoUrl" | "academicLevel" | "memberCategory" | "specialty" | "researchgateUrl" | "scholarUrl" | "linkedinUrl" | "role"
+    >
+  >
 > {
   if (shouldUsePostgres()) {
     const sql = getPgSql()
@@ -1157,7 +1180,7 @@ export async function listTeamMembers(): Promise<
       }
     }
 
-    const rows = (await sql`SELECT id, name, display_name, public_email, photo_url, academic_level, member_category, researchgate_url, scholar_url, linkedin_url, role
+    const rows = (await sql`SELECT id, name, display_name, public_email, photo_url, academic_level, member_category, specialty, researchgate_url, scholar_url, linkedin_url, role
       FROM users WHERE group_member = TRUE ORDER BY role = 'PROFESSOR' DESC, name ASC`) as any[]
     return rows.map((r) => ({
       id: r.id,
@@ -1167,6 +1190,7 @@ export async function listTeamMembers(): Promise<
       photoUrl: r.photo_url ?? null,
       academicLevel: r.academic_level ?? null,
       memberCategory: r.member_category ?? null,
+      specialty: r.specialty ?? null,
       researchgateUrl: r.researchgate_url ?? null,
       scholarUrl: r.scholar_url ?? null,
       linkedinUrl: r.linkedin_url ?? null,
@@ -1191,7 +1215,7 @@ export async function listTeamMembers(): Promise<
   }
   const rows = db
     .prepare(
-      `SELECT id, name, display_name, public_email, photo_url, academic_level, member_category, researchgate_url, scholar_url, linkedin_url, role
+      `SELECT id, name, display_name, public_email, photo_url, academic_level, member_category, specialty, researchgate_url, scholar_url, linkedin_url, role
        FROM users WHERE group_member = 1 ORDER BY CASE WHEN role = 'PROFESSOR' THEN 0 ELSE 1 END, name ASC`,
     )
     .all() as any[]
@@ -1203,6 +1227,7 @@ export async function listTeamMembers(): Promise<
     photoUrl: r.photo_url ?? null,
     academicLevel: r.academic_level ?? null,
     memberCategory: r.member_category ?? null,
+    specialty: r.specialty ?? null,
     researchgateUrl: r.researchgate_url ?? null,
     scholarUrl: r.scholar_url ?? null,
     linkedinUrl: r.linkedin_url ?? null,

@@ -14,6 +14,7 @@ export type ProfileDraft = {
   photoUrl: string | null
   academicLevel: string | null
   memberCategory: string | null
+  specialty: string | null
   directorId: string | null
   directorName: string | null
 }
@@ -32,14 +33,14 @@ const ACADEMIC_LEVELS = [
   { value: "ADMINISTRATIVO", label: "Administrativo" },
 ]
 
-const MEMBER_CATEGORIES = [
-  { value: NONE_VALUE, label: "No especificar" },
-  { value: "Estudiante de doctorado", label: "Estudiante de doctorado" },
-  { value: "Estudiante de maestría", label: "Estudiante de maestría" },
-  { value: "Estudiante de pregrado", label: "Estudiante de pregrado" },
-  { value: "Estudiante de física", label: "Estudiante de física" },
-  { value: "Profesional invitado", label: "Profesional invitado" },
-  { value: "Administrativo", label: "Administrativo" },
+const MEMBER_CATEGORY_SUGGESTIONS = [
+  "Estudiante de doctorado",
+  "Estudiante de maestría",
+  "Estudiante de pregrado",
+  "Estudiante de electrónica",
+  "Estudiante de física",
+  "Profesional invitado",
+  "Administrativo",
 ]
 
 export function ProfileForm({
@@ -266,22 +267,28 @@ export function ProfileForm({
 
         <div className="grid gap-1">
           <div className="text-sm font-medium">Categoría (para Equipo)</div>
-          <Select
-            value={draft.memberCategory ?? NONE_VALUE}
-            onValueChange={(v) => setDraft((d) => ({ ...d, memberCategory: v === NONE_VALUE ? null : v }))}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Selecciona" />
-            </SelectTrigger>
-            <SelectContent>
-              {MEMBER_CATEGORIES.map((o) => (
-                <SelectItem key={o.value} value={o.value}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Input
+            value={draft.memberCategory ?? ""}
+            onChange={(e) => set("memberCategory")(e.target.value)}
+            placeholder="Ej: Estudiante de pregrado"
+            list="member-category-suggestions"
+          />
+          <datalist id="member-category-suggestions">
+            {MEMBER_CATEGORY_SUGGESTIONS.map((v) => (
+              <option key={v} value={v} />
+            ))}
+          </datalist>
         </div>
+      </div>
+
+      <div className="grid gap-1">
+        <div className="text-sm font-medium">ESP (skills / especialidad)</div>
+        <Input
+          value={draft.specialty ?? ""}
+          onChange={(e) => set("specialty")(e.target.value)}
+          placeholder="Ej: Fotónica, Microfabricación, Python"
+        />
+        <div className="text-xs text-muted-foreground">Se mostrará en tu tarjeta del Equipo para evitar repetir “Estudiante de ...”.</div>
       </div>
 
       <div className="grid gap-1">

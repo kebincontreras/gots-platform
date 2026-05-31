@@ -26,6 +26,7 @@ interface TeamMember {
   publicEmail?: string | null
   academicLevel?: string | null
   memberCategory?: string | null
+  specialty?: string | null
   role?: string | null
 }
 
@@ -34,12 +35,11 @@ type GroupKey =
   | "doctorado"
   | "maestria"
   | "pregrado"
-  | "fisica"
   | "profesional"
   | "administrativo"
   | "otros"
 
-const GROUP_ORDER: GroupKey[] = ["profesores", "doctorado", "maestria", "pregrado", "fisica", "profesional", "administrativo", "otros"]
+const GROUP_ORDER: GroupKey[] = ["profesores", "doctorado", "maestria", "pregrado", "profesional", "administrativo", "otros"]
 
 function normalize(value?: string | null) {
   return (value || "")
@@ -60,7 +60,7 @@ function getGroup(program: string): GroupKey {
   if (text.includes("DOCTORADO")) return "doctorado"
   if (text.includes("MAESTRIA")) return "maestria"
   if (text.includes("PREGRADO")) return "pregrado"
-  if (text.includes("FISICA")) return "fisica"
+  if (text.includes("FISICA")) return "pregrado"
   if (text.includes("PROFESIONAL") || text.includes("INVITAD")) return "profesional"
   if (text.includes("ADMINISTRATIV")) return "administrativo"
   return "otros"
@@ -189,10 +189,9 @@ export default function EquipoPage() {
       loading: "Cargando equipo...",
       groupLabels: {
         profesores: "Profesores",
-        doctorado: "Estudiantes Doctorado",
-        maestria: "Estudiantes Maestria",
-        pregrado: "Estudiantes Pregrado",
-        fisica: "Estudiantes Fisica",
+        doctorado: "Estudiantes de doctorado",
+        maestria: "Estudiantes de maestría",
+        pregrado: "Estudiantes de pregrado",
         profesional: "Profesional / Invitado",
         administrativo: "Administrativo",
         otros: "Otros",
@@ -207,7 +206,6 @@ export default function EquipoPage() {
         doctorado: "Doctoral Students",
         maestria: "Master's Students",
         pregrado: "Undergraduate Students",
-        fisica: "Physics Students",
         profesional: "Professional / Guest",
         administrativo: "Administrative",
         otros: "Others",
@@ -222,7 +220,6 @@ export default function EquipoPage() {
         doctorado: "Etudiants en doctorat",
         maestria: "Etudiants en master",
         pregrado: "Etudiants en licence",
-        fisica: "Etudiants en physique",
         profesional: "Professionnel / Invite",
         administrativo: "Administratif",
         otros: "Autres",
@@ -295,7 +292,6 @@ export default function EquipoPage() {
       doctorado: [],
       maestria: [],
       pregrado: [],
-      fisica: [],
       profesional: [],
       administrativo: [],
       otros: [],
@@ -423,6 +419,8 @@ export default function EquipoPage() {
                         {members.map((member) => {
                           const fullName = `${member.nombre} ${member.apellido || ""}`.trim()
                           const imagePath = getPhotoForMember(member)
+                          const isProfessor = normalize(member.role ?? "").includes("PROFESSOR") || getGroup(getProgram(member)) === "profesores"
+                          const specialty = String(member.specialty ?? "").trim()
                           return (
                             <article
                               key={member.id}
@@ -444,7 +442,7 @@ export default function EquipoPage() {
                               <div className="p-4 space-y-2">
                                 <h3 className="font-semibold leading-tight">{fullName}</h3>
                                 <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                                  {getProgram(member)}
+                                  {isProfessor ? getProgram(member) : specialty ? `ESP: ${specialty}` : getProgram(member)}
                                 </div>
                               </div>
                             </article>
@@ -460,12 +458,15 @@ export default function EquipoPage() {
             <Dialog open={selectedMember !== null} onOpenChange={(open) => !open && setSelectedMember(null)}>
               {selectedMember && (
                 <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {`${selectedMember.nombre} ${selectedMember.apellido || ""}`.trim()}
-                    </DialogTitle>
-                    <DialogDescription>{getProgram(selectedMember)}</DialogDescription>
-                  </DialogHeader>
+                    <DialogHeader>
+                      <DialogTitle>
+                        {`${selectedMember.nombre} ${selectedMember.apellido || ""}`.trim()}
+                      </DialogTitle>
+                      <DialogDescription>
+                        {getProgram(selectedMember)}
+                        {String(selectedMember.specialty ?? "").trim() ? ` · ESP: ${String(selectedMember.specialty ?? "").trim()}` : ""}
+                      </DialogDescription>
+                    </DialogHeader>
                   <div className="space-y-4">
                     <div className="w-full rounded-lg overflow-hidden bg-muted">
                       <img
@@ -557,6 +558,7 @@ export default function EquipoPage() {
                                   publicEmail: m.publicEmail ?? null,
                                   academicLevel: m.academicLevel ?? null,
                                   memberCategory: m.memberCategory ?? null,
+                                  specialty: m.specialty ?? null,
                                   role: m.role ?? null,
                                 }
                               })
