@@ -1,6 +1,6 @@
 # Labs parity map
 
-Source reviewed: local `../GOTS_LAB` checkout. This is a precise local-preview comparison, not a production migration claim.
+Source reviewed: local `../GOTS_LAB` checkout. This is a precise local-preview comparison, not an imported-data claim. On 2026-10-27 the empty, additive `lab_*` schema was applied to the existing GOTS Neon database; no GOTS_LAB/Supabase data was inspected or imported. The committed runtime selects the production Postgres adapter only with all fail-closed flags. It is not public until the branch is deployed.
 
 | GOTS_LAB capability | Original source | Local GOTS Labs preview | Deliberately still absent |
 | --- | --- | --- | --- |
@@ -27,7 +27,7 @@ Reservation clarification: original `get_inventory_availability()` counts loans 
 | Experiment wizard | Compact create/start/reserve/session UI; lifecycle workspace | Owner/participant/stock/session/stage/observations/cancel | experiment fixture suites and authenticated three-user HTTP pass | Original multi-step wizard fields, category/date planning and full detail/history UI |
 | Attachments | Synthetic attachment workspace | Guarded packaged/local multipart metadata/download | attachment fixture tests | Storage configuration, scanning/quota, signed production access |
 | Inbox/admin | Local inbox/admin components | Local notification rows and explicit fixture grants | fixture store authorization tests | Delivery, retention/audit controls and authoritative membership source |
-| Production adapter | None; intentionally disabled | UUID mapping validation and review-only schema file | adapter contract test | Schema inspection, approved mapping, non-production migration and RLS review |
+| Production adapter | Server-only Postgres adapter and all API handlers | Explicit membership, owner/participant/responsible predicates, parameterized SQL, `FOR UPDATE` stock reservation and transaction wrapper | pg-mem contract tests; PGlite PostgreSQL-WASM schema/rollback test; DDL executed in Neon | Disposable real PostgreSQL validation with multiple connections; administrator-controlled first grants/catalogue |
 
 - Inventory: imported real catalogue, locations/boxes, categories, kits and child items, search/filtering, photos and item history. The local fixture now supports the original catalogue shape with synthetic locations/categories/boxes/kits and availability shared with every workflow, but its UI is still a compact preview rather than the original complete browse/detail experience.
 - Experiments: full wizard fields, item quantities/sharing, invitations and discovery UI, participant observations, planned dates/stages, cancellation, overdue auto-close, detail/history and immutable real acceptance.
@@ -35,9 +35,10 @@ Reservation clarification: original `get_inventory_availability()` counts loans 
 - Communication: in-app notification views, email/webhook delivery, readable notification audit and message templates.
 - Administration: real member/responsible mapping, role management, audit views and all original RLS policies.
 
-## Production integration plan (not executed)
+## Production integration status
 
-1. Keep existing NextAuth `users.id` as the sole account identity; add a new, migration-reviewed laboratory relation keyed by that UUID rather than making another account table.
-2. Configure a separate non-production database/schema using the repo's existing `DATABASE_URL`/`POSTGRES_URL` convention in `lib/store.ts`; migrate synthetic data first and validate every RLS/transaction invariant.
-3. Introduce server-side route adapters over that relation and the GOTS_LAB-derived tables, then run a reviewed UUID mapping/import with a rollback snapshot. Do not import passwords, sessions, external credentials, files or email settings.
-4. Add delivery/storage only after explicit service configuration and approval; keep notifications disabled until their recipient, retention and audit rules are reviewed.
+1. Done: existing NextAuth `users.id` remains the sole account identity; `lab_memberships` is a separate explicit relation keyed by it.
+2. Done: the additive schema was applied to the verified existing GOTS Neon destination. It starts empty; no user mapping/import was performed.
+3. Done in code, pending publication: all Labs handlers use the server-side adapter. The production adapter never derives access from email/domain/role or fixture flags.
+4. Pending by design: database-blob attachments are implemented but disabled until an operator accepts the 5 MiB-per-file/25 MiB-per-experiment quota and backup impact. Notification email/webhooks are not implemented or enabled.
+5. Pending real validation: a disposable PostgreSQL target with two client connections is required to demonstrate concurrent stock and quota transactions. No existing isolated target was available, and no production test rows were created.
