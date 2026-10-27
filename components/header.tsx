@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation"
 import { signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { getPagePath } from "@/lib/utils"
-import { buildGotsLabHref } from "@/lib/common-auth"
 import { useLanguage } from "@/components/language-provider"
 import { NotificationsBell } from "@/components/notifications-bell"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -29,10 +28,7 @@ export function Header() {
   const { language, setLanguage, t } = useLanguage()
   const pathname = usePathname()
   const forceSolidHeader = pathname === "/dashboard" || pathname?.startsWith("/profesor")
-  const gotsLabHref = buildGotsLabHref({
-    baseUrl: process.env.NEXT_PUBLIC_GOTS_LAB_URL,
-    returnPath: pathname || "/",
-  })
+  const gotsLabHref = getPagePath("/laboratorio")
 
   useEffect(() => {
     const handleScroll = () => {
@@ -134,8 +130,6 @@ export function Header() {
             })}
             <a
               href={gotsLabHref}
-              target="_blank"
-              rel="noreferrer"
               className={`text-sm font-sans font-medium transition-colors ${
                 isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
               }`}
@@ -294,8 +288,6 @@ export function Header() {
             })}
             <a
               href={gotsLabHref}
-              target="_blank"
-              rel="noreferrer"
               className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
               onClick={() => setIsMobileMenuOpen(false)}
             >

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { createUser, getUserByEmail } from "@/lib/store"
+import { isApprovedInstitutionalEmail } from "@/lib/institutional-email"
 
 function getRoleForEmail(email: string) {
   const list = (process.env.PROFESSOR_EMAILS ?? "")
@@ -26,6 +27,12 @@ export async function POST(req: Request) {
     }
     if (emailConfirm && emailConfirm !== email) {
       return NextResponse.json({ error: "Los correos no coinciden." }, { status: 400 })
+    }
+    if (!isApprovedInstitutionalEmail(email)) {
+      return NextResponse.json(
+        { error: "Solo se permite registro con correo institucional @correo.uis.edu.co o @uis.edu.co." },
+        { status: 403 },
+      )
     }
     if (passwordConfirm && passwordConfirm !== password) {
       return NextResponse.json({ error: "Las contraseñas no coinciden." }, { status: 400 })
