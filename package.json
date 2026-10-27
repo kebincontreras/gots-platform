@@ -17,7 +17,7 @@
     "start": "next start",
     "export": "STATIC_EXPORT=1 NEXT_PUBLIC_BASE_PATH=/GOTS.github.io next build && next export",
     "lint": "eslint .",
-    "test:common-auth": "node --test tests/common-auth-contract.test.mjs tests/lab-module-contract.test.mjs tests/institutional-email-contract.test.mjs",
+    "test:common-auth": "node --test tests/common-auth-contract.test.mjs tests/lab-module-contract.test.mjs tests/institutional-email-contract.test.mjs tests/lab-fixture-repository.test.mjs",
     "create-professor": "node scripts/create-professor.js",
     "create-demo-user": "node scripts/create-demo-user.js",
     "set-role": "node scripts/set-role.js",
