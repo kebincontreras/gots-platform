@@ -1,7 +1,13 @@
-# Laboratory integration status (local branch)
+# Laboratory integration status (pre-publication)
 
-This document describes the local, reversible state of the embedded GOTS
-laboratory. It is not a production deployment or a data-migration plan.
+This document distinguishes the committed implementation from the live public
+deployment. The reviewed, additive empty-Labs schema was applied once to the
+existing GOTS Neon PostgreSQL database on 2026-10-27: it created empty `lab_*`
+tables only, and did not read, import, or modify the third-party GOTS_LAB
+Supabase project. The three non-storage Labs runtime flags are configured in
+Vercel Production but do not take effect until a deployment containing this
+branch is published. No production Labs membership, administrator,
+responsible, inventory, loan, experiment, attachment, or fixture row exists.
 
 The interactive inventory, experiment and loan routes use a dedicated SQLite
 fixture store under `/tmp` (or `GOTS_LAB_LOCAL_FIXTURE_DB`) in development only.
@@ -24,7 +30,34 @@ runtime. No Vercel dashboard metadata or environment values were read.
 | Experiment attachments | Owner or approved collaborator can create/read packaged SVG metadata and local multipart JPEG/PNG/WebP synthetic files through guarded development routes; generated names and authenticated download prevent traversal | No user/production data, external URL, storage service, malware scanning, quota service or production adapter enabled |
 | Registration eligibility | Server accepts only `@correo.uis.edu.co` and `@uis.edu.co` for new GOTS registrations | GOTS `/api/register` |
 
-## What is not connected
+## Publication and real-validation gate
+
+The public `main` branch currently predates this implementation. Until the
+reviewed commits are published and Vercel builds them, `gots.site` remains the
+previous release. A successful DDL execution validates schema applicability,
+not a functional workflow.
+
+The production backend flags were set after the additive schema succeeded so
+the deployment can fail closed if the schema is missing or the database URL is
+unavailable. This ordering is safe only because the production Labs tables are
+empty and the un-deployed code cannot route requests to them; it does **not**
+replace the required functional validation below.
+
+Without persisting synthetic data in production, existing access can complete:
+
+- read-only schema/index/constraint introspection in Neon;
+- Vercel build and deployment-log inspection after publication;
+- unauthenticated fail-closed checks and public route loading on `gots.site`.
+
+It cannot complete role, stock, multipart, or concurrent-transaction tests on
+production without creating membership/inventory rows, even if a transaction
+is later rolled back. A rollback test still acquires locks in production and is
+therefore intentionally not run there. The minimum isolated validation target
+is an existing disposable Neon preview branch/database using synthetic GOTS
+users and Labs rows; none was available. Creating one may have plan/cost
+implications and is outside this change.
+
+## What remains deliberately unavailable
 
 All four laboratory routes are protected **shells**, not an import of the
 operational GOTS_LAB application:
@@ -36,9 +69,9 @@ operational GOTS_LAB application:
 | `/laboratorio/experimentos` | Guarded fixture lifecycle; approved collaborators may reserve equipment after owner approval | Discovery/invites UI, observations, files and legal effect |
 | `/laboratorio/prestamos` | Guarded fixture request/decision/return flow | Extensions, real legal effect and notifications |
 
-The gateway's `listInventory`, `listExperiments`, and `listLoans` methods return
-empty arrays. No GOTS_LAB data, files, Supabase project settings, or user records
-are read or written by this branch.
+The gateway lists empty data until a real GOTS administrator deliberately adds
+explicit memberships and inventory. No GOTS_LAB data, files, Supabase project
+settings, or user records are read or written by this branch.
 
 ## Permission storage
 
@@ -64,10 +97,12 @@ and migration or read-adapter plan before they can be exposed through GOTS.
 ## Test classification
 
 `pg-mem` is an in-process PostgreSQL **emulator**, not a PostgreSQL server.
-The schema/adapter test validates reviewed DDL and parameterized query shapes,
-but does not establish PostgreSQL MVCC, pool behavior, or concurrent
-transactions across two connections. Those require a disposable real
-PostgreSQL database before production flags are enabled.
+`tests/lab-pglite-postgres-engine.test.mjs` additionally runs the reviewed DDL
+and a transaction rollback/stock scenario through PGlite's PostgreSQL 17 WASM
+engine. PGlite is still not a production PostgreSQL service and does not prove
+pool behaviour, multi-connection MVCC, or concurrent stock reservations.
+Those require a disposable real PostgreSQL database before operational Labs
+data is enabled.
 
 - `tests/institutional-email-contract.test.mjs`: unit tests of the exact
   registration-domain predicate. The API route imports that predicate before any
@@ -102,7 +137,9 @@ backup/restore cost. Object storage is preferable at higher volume but needs an
 approved provider, private bucket, signed-access policy, lifecycle/retention,
 malware scanning, cost owner and operational runbook. Either option needs an
 approved destination, quotas, retention, backup impact and real PostgreSQL
-concurrency testing before activation.
+concurrency testing before activation. The production attachment flags remain
+unset, so upload/download requests return `503`; this is intentional rather
+than a disk or public-URL fallback.
 
 ## Local HTTP QA (synthetic only)
 

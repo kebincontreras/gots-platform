@@ -17,7 +17,7 @@
     "start": "next start",
     "export": "STATIC_EXPORT=1 NEXT_PUBLIC_BASE_PATH=/GOTS.github.io next build && next export",
     "lint": "eslint .",
-    "test:common-auth": "node --test tests/common-auth-contract.test.mjs tests/lab-module-contract.test.mjs tests/lab-production-postgres-adapter.test.mjs tests/lab-postgres-schema.test.mjs tests/institutional-email-contract.test.mjs tests/lab-fixture-repository.test.mjs tests/lab-loans-fixture-repository.test.mjs tests/lab-experiments-fixture-repository.test.mjs tests/lab-local-fixture-store.test.mjs",
+    "test:common-auth": "node --test tests/common-auth-contract.test.mjs tests/lab-module-contract.test.mjs tests/lab-production-postgres-adapter.test.mjs tests/lab-postgres-schema.test.mjs tests/lab-pglite-postgres-engine.test.mjs tests/institutional-email-contract.test.mjs tests/lab-fixture-repository.test.mjs tests/lab-loans-fixture-repository.test.mjs tests/lab-experiments-fixture-repository.test.mjs tests/lab-local-fixture-store.test.mjs",
     "create-professor": "node scripts/create-professor.js",
     "create-demo-user": "node scripts/create-demo-user.js",
     "set-role": "node scripts/set-role.js",
@@ -83,6 +83,7 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.4.1",
     "@tailwindcss/postcss": "^4.1.9",
     "@types/node": "^22",
     "@types/react": "^18",
