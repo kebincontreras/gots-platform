@@ -1,17 +1,11 @@
 import { Header } from "@/components/header"
-import { LabAccessPanel } from "@/components/laboratory/lab-access-panel"
-import { getLaboratoryContext } from "@/lib/lab-module"
+import { LabOverview } from "@/components/laboratory/lab-overview"
 
-export default async function LaboratoryPage() {
-  const { authorization } = await getLaboratoryContext("public")
+export default function LaboratoryPage() {
   return (
     <>
       <Header />
-      <LabAccessPanel
-        title="Laboratorio GOTS"
-        description="El inventario, los experimentos y los préstamos viven dentro de GOTS y usan la misma sesión de tu cuenta principal."
-        allowed={authorization.allowed}
-      />
+      <LabOverview />
     </>
   )
 }
