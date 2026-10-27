@@ -3,13 +3,25 @@
 This document describes the local, reversible state of the embedded GOTS
 laboratory. It is not a production deployment or a data-migration plan.
 
+The interactive inventory, experiment and loan routes use a dedicated SQLite
+fixture store under `/tmp` (or `GOTS_LAB_LOCAL_FIXTURE_DB`) in development only.
+It contains only synthetic rows and is never selected in production.
+
+The public `gots.site` endpoint was read-only verified on 2026-10-27 as a
+Vercel-served Next.js deployment (Vercel and Next response headers). The
+repository's GitHub Pages workflow is therefore not treated as the active
+runtime. No Vercel dashboard metadata or environment values were read.
+
 ## What is functional now
 
 | Surface | Current behavior | Data source |
 | --- | --- | --- |
 | `GOTS Lab` navigation | Goes to the internal `/laboratorio` route on GOTS, on desktop and mobile | GOTS application routes |
 | Session boundary | A visitor without a GOTS session is redirected to the existing `/login` flow | Existing NextAuth credentials session |
-| Authorization boundary | Inventory and experiments require the explicit `approved_lab_member` scope; loan requests require an explicit laboratory scope | Disabled local gateway by default; mock only in tests |
+| Authorization boundary | Inventory and experiments require the explicit `approved_lab_member` scope; loan requests require an explicit laboratory scope | Development UUID grants only; disabled by default and in production |
+| Loans | Pending request, aggregate quantity reservation, responsible-only decision and return | Local SQLite; simulated acknowledgement only |
+| Experiments | Owner start, shared quantity reservation, single open session, close and finish/return | Local SQLite; collaborators and real legal acceptance absent |
+| Experiment attachments | Owner or approved collaborator can create/read packaged SVG metadata and local multipart JPEG/PNG/WebP synthetic files through guarded development routes; generated names and authenticated download prevent traversal | No user/production data, external URL, storage service, malware scanning, quota service or production adapter enabled |
 | Registration eligibility | Server accepts only `@correo.uis.edu.co` and `@uis.edu.co` for new GOTS registrations | GOTS `/api/register` |
 
 ## What is not connected
@@ -20,9 +32,9 @@ operational GOTS_LAB application:
 | Route | Present | Missing real functionality |
 | --- | --- | --- |
 | `/laboratorio` | Public organizational overview/navigation; it has no data | Membership source, laboratory data |
-| `/laboratorio/inventario` | Guard and explanatory UI | Inventory read/write, locations, images, reservations |
-| `/laboratorio/experimentos` | Guard and explanatory UI | Experiments, participants, sessions, items, legal acceptance |
-| `/laboratorio/prestamos` | Guard and explanatory UI | Loan applications, approvals, legal acceptance, availability, notifications |
+| `/laboratorio/inventario` | Guarded fixture availability read | Locations, images and real inventory |
+| `/laboratorio/experimentos` | Guarded fixture lifecycle; approved collaborators may reserve equipment after owner approval | Discovery/invites UI, observations, files and legal effect |
+| `/laboratorio/prestamos` | Guarded fixture request/decision/return flow | Extensions, real legal effect and notifications |
 
 The gateway's `listInventory`, `listExperiments`, and `listLoans` methods return
 empty arrays. No GOTS_LAB data, files, Supabase project settings, or user records
@@ -66,6 +78,26 @@ and migration or read-adapter plan before they can be exposed through GOTS.
   sign in or create an account.
 - `next build --webpack`: compilation and route-discovery check, not a
   functional data or authorization integration test.
+
+## Local HTTP QA (synthetic only)
+
+On 2026-10-27, an isolated localhost server used a temporary SQLite user
+database and separate fixture SQLite file under `/tmp`, with three explicit
+fixture UUID grants (two members and one responsible professor). It verified:
+
+- credentials login redirects an existing GOTS account into the protected Labs
+  route; no second laboratory registration is created;
+- a pending request for 3 of 5 laser units returns `201` and inventory then
+  reports 3 reserved / 2 available;
+- a competing request for 3 units returns `409 inventory-insufficient-quantity`;
+- only the configured responsible can approve; the requester can request an
+  extension; another member receives `403 loan-extension-forbidden`;
+- approved extension persists, and requester return restores the loan state to
+  `returned` and releases all three units.
+
+The browser desktop/mobile pass remains unexecuted: the available macOS host
+was locked and UI automation cannot unlock it. No normal browser cookies or
+accounts were inspected or reused.
 
 ## Minimum next permission, precisely scoped
 
