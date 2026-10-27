@@ -134,7 +134,7 @@ export function Header() {
                 isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
               }`}
             >
-              GOTS Lab
+              Labs
             </a>
             <div className="flex items-center gap-1 rounded-md border border-border/60 bg-background/20 p-1">
               {languageOptions.map((lang) => (
@@ -291,7 +291,7 @@ export function Header() {
               className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              GOTS Lab
+              Labs
             </a>
             <div className="flex items-center gap-2 pt-2">
               {languageOptions.map((lang) => (

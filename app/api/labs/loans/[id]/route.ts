@@ -1,20 +1,7 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { getLocalLabServerStore } from "@/lib/lab-local-server"
-
-export const runtime = "nodejs"
-async function current() { const session=await getServerSession(authOptions); const id=(session?.user as any)?.id as string|undefined; const role=(session?.user as any)?.role as string|undefined; if(!id)return null; const store=getLocalLabServerStore(); if(!store.getMembership(id)){store.close();return null} store.ensureInventoryFixtures(); return {id,role,store} }
-export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}) {
-  if(process.env.NODE_ENV!=="development")return NextResponse.json({error:"Local Labs preview disabled"},{status:404})
-  const actor=await current(); if(!actor)return NextResponse.json({error:"Laboratory membership required"},{status:403})
-  try { const body=await request.json().catch(()=>null); const {id}=await params; let loan
-    if(body?.action==="decide") { if(actor.role!=="PROFESSOR" || !actor.store.isLoanResponsible(actor.id)) throw new Error("loan-decision-forbidden"); loan=actor.store.decideLoan({loanId:id,professorId:actor.id,decision:body?.decision,rejectionReason:body?.rejectionReason}) }
-    else if(body?.action==="request-extension") loan=actor.store.requestLoanExtension({loanId:id,requesterId:actor.id,newUsageEnd:String(body?.newUsageEnd??"")})
-    else if(body?.action==="resolve-extension") { if(actor.role!=="PROFESSOR" || !actor.store.isLoanResponsible(actor.id)) throw new Error("loan-decision-forbidden"); loan=actor.store.resolveLoanExtension({loanId:id,professorId:actor.id,approve:body?.approve===true}) }
-    else if(body?.action==="return") loan=actor.store.returnLoan({loanId:id,actorId:actor.id,isResponsible:actor.role==="PROFESSOR"})
-    else throw new Error("loan-invalid-action")
-    return NextResponse.json({loan})
-  } catch(error:any) { const message=String(error?.message??"loan-invalid-action"); const status=message.includes("forbidden")?403:message==="loan-not-found"?404:409; return NextResponse.json({error:message},{status}) }
-  finally {actor.store.close()}
-}
+import { closeLabActor, getLabActor, labErrorStatus, labsUnavailable } from "@/lib/lab-route-runtime"
+export const runtime="nodejs"
+export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){const actor=await getLabActor("loan");if(!actor)return NextResponse.json({error:"Laboratory membership required"},{status:403});if(actor.kind==="disabled")return NextResponse.json(labsUnavailable(),{status:503});try{const body=await request.json().catch(()=>null),{id}=await params;let loan
+if(actor.kind==="fixture"){if(body?.action==="decide"){if(actor.role!=="PROFESSOR"||!actor.store.isLoanResponsible(actor.id))throw new Error("loan-decision-forbidden");loan=actor.store.decideLoan({loanId:id,professorId:actor.id,decision:body?.decision,rejectionReason:body?.rejectionReason})}else if(body?.action==="request-extension")loan=actor.store.requestLoanExtension({loanId:id,requesterId:actor.id,newUsageEnd:String(body?.newUsageEnd??"")});else if(body?.action==="resolve-extension"){if(actor.role!=="PROFESSOR"||!actor.store.isLoanResponsible(actor.id))throw new Error("loan-decision-forbidden");loan=actor.store.resolveLoanExtension({loanId:id,professorId:actor.id,approve:body?.approve===true})}else if(body?.action==="mark-lost-stolen"){if(actor.role!=="PROFESSOR"||!actor.store.isLoanResponsible(actor.id))throw new Error("loan-decision-forbidden");loan=actor.store.markLoanLost({loanId:id,professorId:actor.id})}else if(body?.action==="return")loan=actor.store.returnLoan({loanId:id,actorId:actor.id,isResponsible:actor.role==="PROFESSOR"});else throw new Error("loan-invalid-action")
+}else {if(body?.action==="decide")loan=(await actor.store.decideLoan({loanId:id,responsibleId:actor.id,status:body?.decision,at:new Date().toISOString(),reason:body?.rejectionReason??null}))[0];else if(body?.action==="request-extension")loan=(await actor.store.requestExtension({loanId:id,actorId:actor.id,end:String(body?.newUsageEnd??"")}))[0];else if(body?.action==="resolve-extension")loan=(await actor.store.resolveExtension({loanId:id,actorId:actor.id,approve:body?.approve===true}))[0];else if(body?.action==="mark-lost-stolen")loan=(await actor.store.markLost({loanId:id,actorId:actor.id,at:new Date().toISOString()}))[0];else if(body?.action==="return")loan=(await actor.store.returnLoan({loanId:id,actorId:actor.id,at:new Date().toISOString()}))[0];else throw new Error("loan-invalid-action");if(!loan)throw new Error("loan-not-found")}
+return NextResponse.json({loan})}catch(error){return NextResponse.json({error:String((error as any)?.message??error)},{status:labErrorStatus(error)})}finally{closeLabActor(actor)}}

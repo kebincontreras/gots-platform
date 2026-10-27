@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { getLocalLabServerStore } from "@/lib/lab-local-server"
+import { closeLabActor, getLabActor, labsUnavailable } from "@/lib/lab-route-runtime"
 export const runtime="nodejs"
-export async function GET(){if(process.env.NODE_ENV!=="development")return NextResponse.json({error:"Local Labs preview disabled"},{status:404});const session=await getServerSession(authOptions);const id=(session?.user as any)?.id;if(!id)return NextResponse.json({error:"Laboratory membership required"},{status:403});const store=getLocalLabServerStore();try{if(!store.getMembership(id))return NextResponse.json({error:"Laboratory membership required"},{status:403});return NextResponse.json({responsibles:store.listLoanResponsibles()})}finally{store.close()}}
+export async function GET(){const actor=await getLabActor("loan");if(!actor)return NextResponse.json({error:"Laboratory membership required"},{status:403});if(actor.kind==="disabled")return NextResponse.json(labsUnavailable(),{status:503});try{return NextResponse.json({responsibles:actor.kind==="fixture"?actor.store.listLoanResponsibles():await actor.store.listLoanResponsibles()})}finally{closeLabActor(actor)}}

@@ -32,7 +32,7 @@ operational GOTS_LAB application:
 | Route | Present | Missing real functionality |
 | --- | --- | --- |
 | `/laboratorio` | Public organizational overview/navigation; it has no data | Membership source, laboratory data |
-| `/laboratorio/inventario` | Guarded fixture availability read | Locations, images and real inventory |
+| `/laboratorio/inventario` | Guarded synthetic catalogue query: locations, categories, boxes, kit-child availability and local experiment-item history | Imported locations/photos/catalogue and original search UI |
 | `/laboratorio/experimentos` | Guarded fixture lifecycle; approved collaborators may reserve equipment after owner approval | Discovery/invites UI, observations, files and legal effect |
 | `/laboratorio/prestamos` | Guarded fixture request/decision/return flow | Extensions, real legal effect and notifications |
 
@@ -63,6 +63,12 @@ and migration or read-adapter plan before they can be exposed through GOTS.
 
 ## Test classification
 
+`pg-mem` is an in-process PostgreSQL **emulator**, not a PostgreSQL server.
+The schema/adapter test validates reviewed DDL and parameterized query shapes,
+but does not establish PostgreSQL MVCC, pool behavior, or concurrent
+transactions across two connections. Those require a disposable real
+PostgreSQL database before production flags are enabled.
+
 - `tests/institutional-email-contract.test.mjs`: unit tests of the exact
   registration-domain predicate. The API route imports that predicate before any
   user creation.
@@ -78,6 +84,25 @@ and migration or read-adapter plan before they can be exposed through GOTS.
   sign in or create an account.
 - `next build --webpack`: compilation and route-discovery check, not a
   functional data or authorization integration test.
+
+## Attachment storage decision
+
+No existing GOTS object-storage integration was found. The empty schema now
+contains an optional, disabled database-blob path for small private images:
+`lab_attachment_blobs.content bytea`, capped at 5 MiB per file and 25 MiB per
+experiment, with SHA-256 recorded in `lab_attachments`. It is selected only
+when both `GOTS_LABS_ATTACHMENT_STORAGE=database` and
+`GOTS_LABS_ATTACHMENT_STORAGE_READY=1` are explicitly set; otherwise routes
+fail closed. Authenticated owner/approved-participant reads are enforced and
+production never falls back to local disk.
+
+This is transitional, not a substitute for object storage. Database blobs make
+private access and backups simple for small volumes but increase DB size and
+backup/restore cost. Object storage is preferable at higher volume but needs an
+approved provider, private bucket, signed-access policy, lifecycle/retention,
+malware scanning, cost owner and operational runbook. Either option needs an
+approved destination, quotas, retention, backup impact and real PostgreSQL
+concurrency testing before activation.
 
 ## Local HTTP QA (synthetic only)
 
@@ -95,6 +120,18 @@ fixture UUID grants (two members and one responsible professor). It verified:
 - approved extension persists, and requester return restores the loan state to
   `returned` and releases all three units.
 
+A second authenticated HTTP pass used three separate NextAuth cookie jars for
+an owner, an approved collaborator and an approved non-participant. It created
+an experiment, started it with the explicit synthetic acknowledgement, set the
+`montaje` stage, approved the collaborator's request, opened an overdue
+session, saved that collaborator's observation, and auto-closed then cancelled
+the experiment. The non-participant's stage update was rejected with HTTP 403.
+The owner list still returned the cancelled experiment with the persisted
+observation and planned-end close timestamp. The same isolated store also
+verified catalogue filters for a synthetic kit, its two children, locations,
+category and box metadata. No browser account, production account, Vercel
+environment, Supabase data or user cookie was used.
+
 The browser desktop/mobile pass remains unexecuted: the available macOS host
 was locked and UI automation cannot unlock it. No normal browser cookies or
 accounts were inspected or reused.
@@ -107,3 +144,22 @@ fixtures. The minimum required effect is to create a preview-only laboratory
 membership table keyed by existing GOTS user IDs and synthetic laboratory rows;
 no user migration, email delivery, Supabase tenant change, credentials, or
 production data access is required for that step.
+
+## Empty-GOTS persistence decision
+
+The requested direction is now to create new Labs data in the existing GOTS
+datastore, without accessing, importing, altering, or depending on the
+third-party GOTS_LAB Supabase project. Review-only additive SQL is kept in
+`migrations/labs/`; it is not run automatically. The local checkout confirms
+that GOTS selects PostgreSQL only when Vercel supplies `DATABASE_URL` or
+`POSTGRES_URL`, otherwise it uses SQLite. On 2026-10-27 the local Vercel CLI
+had no authenticated credential, so this branch could not read even variable
+names or verify the remote datastore provider. No login, token, secret value,
+remote schema inspection, or migration was attempted.
+
+Before applying the empty schema, the precise external operation is: verify
+that the deployment's existing GOTS PostgreSQL destination is the intended
+database, take its normal backup, and apply the two additive `migrations/labs`
+files once. This preserves the existing `users` table and all current GOTS
+data; it creates only empty `lab_*` tables. A future import of another lab's
+data is a separate task and is not a prerequisite.

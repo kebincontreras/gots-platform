@@ -1,11 +1,9 @@
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/lib/auth"
-import { createLabModuleGateway, authorizeLabSection, getLabSectionPath, LabModuleSection } from "./lab-module-contract.mjs"
+import { getLocalFixtureGateway, authorizeLabSection, getLabSectionPath, LabModuleSection } from "./lab-module-contract.mjs"
 
 export { LabModuleSection }
-
-const disabledGateway = createLabModuleGateway()
 
 export async function getLaboratoryContext(section: string) {
   const session = await getServerSession(authOptions)
@@ -13,9 +11,10 @@ export async function getLaboratoryContext(section: string) {
   if (!userId) redirect(`/login?callbackUrl=${getLabSectionPath(section)}`)
 
   const expiresAt = new Date(session?.expires ?? 0).getTime()
-  const identity = await disabledGateway.getIdentity(userId, expiresAt)
+  const identity = await getLocalFixtureGateway().getIdentity(userId, expiresAt)
   return {
     identity,
+    role: (session?.user as any)?.role as string | undefined,
     authorization: authorizeLabSection(identity, section),
   }
 }

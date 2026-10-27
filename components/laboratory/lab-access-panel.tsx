@@ -3,6 +3,9 @@ import { LabFixtureWorkspace } from "./lab-fixture-workspace"
 import { LabAttachmentWorkspace } from "./lab-attachment-workspace"
 import { LabNotificationInbox } from "./lab-notification-inbox"
 import { LabAdminWorkspace } from "./lab-admin-workspace"
+import { LabLoanCartWorkspace } from "./lab-loan-cart-workspace"
+import { LabExperimentLifecycleWorkspace } from "./lab-experiment-lifecycle-workspace"
+import { LabCatalogueWorkspace } from "./lab-catalogue-workspace"
 
 export function LabAccessPanel({
   title,
@@ -28,8 +31,9 @@ export function LabAccessPanel({
         <p className="mt-3 max-w-2xl text-muted-foreground">{description}</p>
         {allowed ? (
           <>
-            <LabFixtureWorkspace section={active as "inventory" | "experiments" | "loans"} identity={identity!} role={role} />
+            {active === "inventory" ? <LabCatalogueWorkspace /> : active === "loans" ? <LabLoanCartWorkspace role={role} /> : <LabFixtureWorkspace section="experiments" identity={identity!} role={role} />}
             {active === "experiments" ? <LabAttachmentWorkspace /> : null}
+            {active === "experiments" ? <LabExperimentLifecycleWorkspace /> : null}
             <LabNotificationInbox />
             <LabAdminWorkspace />
           </>

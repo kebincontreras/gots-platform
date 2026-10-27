@@ -2,7 +2,7 @@ import Database from "better-sqlite3"
 import fs from "node:fs"
 import path from "node:path"
 import crypto from "node:crypto"
-import { neon } from "@neondatabase/serverless"
+import { neon, Pool } from "@neondatabase/serverless"
 
 export type Role = "PROFESSIONAL" | "GUEST" | "STUDENT" | "EXTERNAL_RESEARCHER" | "PROFESSOR" | "EDITOR_NOTICIAS"
 
@@ -182,6 +182,7 @@ function getPostgresUrl(): string | null {
 }
 
 let pgSqlSingleton: ReturnType<typeof neon> | null = null
+let labPgPool: Pool | null = null
 let pgInitialized = false
 
 function getPgSql() {
@@ -190,6 +191,33 @@ function getPgSql() {
   if (!url) return null
   pgSqlSingleton = neon(url)
   return pgSqlSingleton
+}
+
+/** Server-only executor for Labs. It is intentionally fail-closed: merely
+ * configuring DATABASE_URL never enables Labs persistence. The separate
+ * GOTS_LABS_POSTGRES_ENABLED=1 switch is set only after the empty schema is
+ * verified on the intended GOTS PostgreSQL database. Pool clients, rather
+ * than Neon HTTP transactions, are used for interactive stock transactions. */
+export function getGotsPostgresLabExecutor() {
+  if (process.env.GOTS_LABS_POSTGRES_ENABLED !== "1") throw new Error("labs-postgres-disabled")
+  const url = getPostgresUrl()
+  if (!url) throw new Error("labs-postgres-url-missing")
+  if (!labPgPool) labPgPool = new Pool({ connectionString: url })
+  return {
+    query: async (statement: string, parameters: unknown[] = []) => (await labPgPool!.query(statement, parameters as any)).rows,
+    transaction: async <T>(work: (query: (statement: string, parameters?: unknown[]) => Promise<any[]>) => Promise<T>) => {
+      const client = await labPgPool!.connect()
+      try {
+        await client.query("BEGIN")
+        const result = await work(async (statement, parameters = []) => (await client.query(statement, parameters as any)).rows)
+        await client.query("COMMIT")
+        return result
+      } catch (error) {
+        try { await client.query("ROLLBACK") } catch {}
+        throw error
+      } finally { client.release() }
+    },
+  }
 }
 
 async function ensurePgSchema() {

@@ -8,21 +8,21 @@ const sections = [
     href: "/laboratorio/inventario",
     title: "Inventario",
     description: "Equipos, ubicaciones, disponibilidad y reservas para el trabajo del grupo.",
-    note: "Estructura preparada · datos aún no conectados",
+    note: "Flujo local sintético disponible con concesión explícita",
     icon: PackageSearch,
   },
   {
     href: "/laboratorio/experimentos",
     title: "Experimentos",
     description: "Trazabilidad, participantes, sesiones y equipos asociados a cada práctica.",
-    note: "Estructura preparada · datos aún no conectados",
+    note: "Estados y protecciones locales disponibles con concesión explícita",
     icon: FlaskConical,
   },
   {
     href: "/laboratorio/prestamos",
     title: "Préstamos",
     description: "Solicitudes, responsables y seguimiento de equipos fuera del laboratorio.",
-    note: "Estructura preparada · datos aún no conectados",
+    note: "Solicitud y estados locales disponibles con concesión explícita",
     icon: Handshake,
   },
 ]
@@ -35,7 +35,7 @@ export function LabOverview() {
         <p className="text-sm font-medium text-muted-foreground">GOTS · Plataforma principal</p>
         <div className="mt-3 flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div className="max-w-3xl">
-            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Laboratorio GOTS</h1>
+            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Labs</h1>
             <p className="mt-3 text-muted-foreground">
               Una organización única para el laboratorio dentro de GOTS. La cuenta GOTS será la entrada única; los permisos de cada sección se mantendrán separados y explícitos.
             </p>

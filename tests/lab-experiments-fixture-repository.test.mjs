@@ -1,0 +1,11 @@
+import test from "node:test"
+import assert from "node:assert/strict"
+import { LabAccessScope } from "../lib/common-auth-contract.mjs"
+import { createFixtureExperimentRepository } from "../lib/lab-experiments-fixture-repository.mjs"
+const now = 1_800_000_000_000
+const owner = { subject: "owner", sessionExpiresAt: now + 999999, labAccessScope: LabAccessScope.APPROVED_LAB_MEMBER }
+const partner = { subject: "partner", sessionExpiresAt: now + 999999, labAccessScope: LabAccessScope.APPROVED_LAB_MEMBER }
+const stranger = { subject: "stranger", sessionExpiresAt: now + 999999, labAccessScope: LabAccessScope.APPROVED_LAB_MEMBER }
+test("owner can run the draft-session-finish flow and finish returns active equipment", async () => { const r=createFixtureExperimentRepository(); const e=await r.create(owner,{title:"Franjas de Young",category:"Interferencia",itemId:"laser"},now); const s=await r.start(owner,e.id,"2027-01-01T09:00:00Z","2027-01-01T10:00:00Z",now); await assert.rejects(r.finish(owner,e.id,now),/open-session/); await r.close(owner,s.id,"2027-01-01T09:30:00Z",now); assert.equal((await r.finish(owner,e.id,now)).status,"finished"); assert.equal((await r.list(owner,now))[0].items[0].status,"returned") })
+test("only owner resolves participant requests; approved participant may add equipment", async () => { const r=createFixtureExperimentRepository(); const e=await r.create(owner,{title:"Patrón de difracción",category:"Difracción"},now); const p=await r.addParticipant(owner,e.id,partner.subject,now); await assert.rejects(r.resolveParticipant(stranger,p.id,"approved",now),/owner-required/); await r.resolveParticipant(owner,p.id,"approved",now); assert.equal((await r.addItem(partner,e.id,"lens",now)).addedBy,partner.subject); await assert.rejects(r.addItem(stranger,e.id,"camera",now),/owner-or-approved/) })
+test("non-members cannot create or read experiments", async () => { const r=createFixtureExperimentRepository(); const noAccess={subject:"uis-looking",sessionExpiresAt:now+1,labAccessScope:LabAccessScope.NONE}; await assert.rejects(r.create(noAccess,{title:"No grant",category:"Interferencia"},now),/access-denied/); await assert.rejects(r.list(noAccess,now),/access-denied/) })

@@ -5,7 +5,7 @@ Source reviewed: local `../GOTS_LAB` checkout. This is a precise local-preview c
 | GOTS_LAB capability | Original source | Local GOTS Labs preview | Deliberately still absent |
 | --- | --- | --- | --- |
 | Identity and access | `src/hooks/useAuth.ts`, profile RLS | Existing NextAuth session; development-only UUID grants in isolated SQLite | Production membership relation/migration |
-| Inventory and availability | `queries/inventory.ts`; `00028_prestamos.sql` | Read-only inventory UI with `quantity_total`, aggregate reservations and `quantity_available`; pending loans and active experiment items share one local SQLite stock transaction | Imported catalogue quantities, locations and images |
+| Inventory and availability | `queries/inventory.ts`; `00028_prestamos.sql` | Read-only local catalogue API preserves top-level-only browsing, locations, categories, boxes, kit-child aggregate availability, text/location/category filters and synthetic item history; pending loans and active experiment items share one SQLite stock transaction | Imported catalogue quantities/photos and the original complete browse/detail UI |
 | Loan request | `queries/loans.ts:152-228` | Persistent pending request, dates, purpose, selected local responsible UUID, per-item quantities and explicit simulated acknowledgement | Multi-item cart UI, extension and lost/stolen UI |
 | Loan decision/return | `queries/loans.ts:331-457` | Responsible-only approve/reject, requester/responsible return, overdue refresh and restart persistence | Real legal acceptance and notifications |
 | Experiment lifecycle | `queries/experiments.ts:510-533, 980-1155` | Owner creates, starts with simulated acknowledgement, reserves fixture item, opens/closes one session, and finishes with transactional item return | Collaborators, observations, dates/stages and cancellation |
@@ -18,7 +18,18 @@ Reservation clarification: original `get_inventory_availability()` counts loans 
 
 ## Complete remaining original-function list
 
-- Inventory: imported real catalogue, locations/boxes, categories, kits and child items, search/filtering, photos and item history. The local fixture now supports quantities greater than one and availability shared with every workflow.
+## Verifiable parity matrix (2026-10-27)
+
+| Area | UI in GOTS preview | Local API/store | Evidence | Remaining before a real release |
+| --- | --- | --- | --- | --- |
+| Catalogue | Search/filter controls, cards, kit detail/children and local history | `/api/labs/inventory` supports location/category/box/query/detail and kit aggregates | fixture-store catalogue test; authenticated HTTP query | Import/review real items/photos and complete original modal/grid affordances |
+| Loans | Multi-item cart and lifecycle controls | Pending reservation, decision, extension, lost/stolen, return | loan fixture suites and authenticated HTTP pass | Real acceptance, named staff directory, notification delivery/audit |
+| Experiment wizard | Compact create/start/reserve/session UI; lifecycle workspace | Owner/participant/stock/session/stage/observations/cancel | experiment fixture suites and authenticated three-user HTTP pass | Original multi-step wizard fields, category/date planning and full detail/history UI |
+| Attachments | Synthetic attachment workspace | Guarded packaged/local multipart metadata/download | attachment fixture tests | Storage configuration, scanning/quota, signed production access |
+| Inbox/admin | Local inbox/admin components | Local notification rows and explicit fixture grants | fixture store authorization tests | Delivery, retention/audit controls and authoritative membership source |
+| Production adapter | None; intentionally disabled | UUID mapping validation and review-only schema file | adapter contract test | Schema inspection, approved mapping, non-production migration and RLS review |
+
+- Inventory: imported real catalogue, locations/boxes, categories, kits and child items, search/filtering, photos and item history. The local fixture now supports the original catalogue shape with synthetic locations/categories/boxes/kits and availability shared with every workflow, but its UI is still a compact preview rather than the original complete browse/detail experience.
 - Experiments: full wizard fields, item quantities/sharing, invitations and discovery UI, participant observations, planned dates/stages, cancellation, overdue auto-close, detail/history and immutable real acceptance.
 - Loans: cart with quantities, selecting/displaying responsible staff, rejection reason UI, extension request/resolution, overdue/lost-stolen lifecycle, real legal acceptance and history.
 - Communication: in-app notification views, email/webhook delivery, readable notification audit and message templates.
