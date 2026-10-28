@@ -60,10 +60,9 @@ export function NotificationsBell({ solid }: { solid: boolean }) {
 
   const onOpenChange = async (open: boolean) => {
     if (open) {
-      const { unread: u } = await load()
-      if (u > 0) {
-        await markAllRead()
-      }
+      // Opening the bell is not acknowledgement. Editorial and membership
+      // categories keep their own unread state until an explicit action.
+      await load()
     }
   }
 
@@ -123,10 +122,10 @@ export function NotificationsBell({ solid }: { solid: boolean }) {
         {error ? (
           <div className="px-2 py-2 text-sm text-destructive">{error}</div>
         ) : null}
-        {items.length === 0 && !error ? (
+        {items.filter((n) => !(n.type === "MEMBERSHIP_REQUEST" && n.meta?.resolvedAt)).length === 0 && !error ? (
           <div className="px-2 py-6 text-sm text-muted-foreground text-center">Sin notificaciones.</div>
         ) : null}
-        {items.map((n) => (
+        {items.filter((n) => !(n.type === "MEMBERSHIP_REQUEST" && n.meta?.resolvedAt)).map((n) => (
           n.type === "MEMBERSHIP_REQUEST" && n.meta?.requestId && n.meta?.userId ? (
             <DropdownMenuItem
               key={n.id}

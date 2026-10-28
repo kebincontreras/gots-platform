@@ -113,7 +113,7 @@ export type DmMessage = {
   createdAt: string
 }
 
-export type NotificationType = "MEMBERSHIP_REQUEST" | "NEWS_PUBLISHED" | "MEMBER_JOINED"
+export type NotificationType = "MEMBERSHIP_REQUEST" | "NEWS_PUBLISHED" | "ARTICLE_PUBLISHED" | "MEMBER_JOINED"
 
 export type Notification = {
   id: string
@@ -392,6 +392,8 @@ async function ensurePgSchema() {
   await sql`CREATE INDEX IF NOT EXISTS idx_publications_year ON publications(year);`
   await sql`CREATE INDEX IF NOT EXISTS idx_membership_requests_user ON membership_requests(user_id);`
   await sql`CREATE INDEX IF NOT EXISTS idx_membership_requests_status ON membership_requests(status);`
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_requests_one_pending_user
+    ON membership_requests(user_id) WHERE status = 'PENDING';`
   await sql`CREATE INDEX IF NOT EXISTS idx_group_messages_created ON group_messages(created_at);`
   await sql`CREATE INDEX IF NOT EXISTS idx_dm_threads_users ON dm_threads(user_a, user_b);`
   await sql`CREATE INDEX IF NOT EXISTS idx_dm_messages_thread_created ON dm_messages(thread_id, created_at);`
@@ -497,6 +499,7 @@ function getSqliteDb() {
     );
     CREATE INDEX IF NOT EXISTS idx_membership_requests_user ON membership_requests(user_id);
     CREATE INDEX IF NOT EXISTS idx_membership_requests_status ON membership_requests(status);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_requests_one_pending_user ON membership_requests(user_id) WHERE status = 'PENDING';
 
     CREATE TABLE IF NOT EXISTS group_messages (
       id TEXT PRIMARY KEY,
@@ -1173,23 +1176,64 @@ export async function resolveMembershipRequest(input: {
   requestId: string
   status: Exclude<MembershipRequestStatus, "PENDING">
   resolvedBy: string
-}): Promise<void> {
+}): Promise<{ request: MembershipRequest | null; changed: boolean }> {
   const resolvedAt = nowIso()
   if (shouldUsePostgres()) {
     const sql = getPgSql()
     if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
     await ensurePgSchema()
-    await sql`UPDATE membership_requests
-      SET status = ${input.status}, resolved_by = ${input.resolvedBy}, resolved_at = ${resolvedAt}
-      WHERE id = ${input.requestId} AND status = 'PENDING'`
-    return
+    // The conditional update makes exactly one concurrent resolver win. The
+    // member flag is updated in the same statement, so approval cannot leave
+    // a resolved request without its corresponding membership state.
+    const resolved = (await sql`WITH resolved AS (
+        UPDATE membership_requests
+        SET status = ${input.status}, resolved_by = ${input.resolvedBy}, resolved_at = ${resolvedAt}
+        WHERE id = ${input.requestId} AND status = 'PENDING'
+        RETURNING id, user_id, status, created_at, resolved_by, resolved_at
+      ), member_update AS (
+        UPDATE users u
+        SET group_member = TRUE, updated_at = ${resolvedAt}
+        FROM resolved r
+        WHERE u.id = r.user_id AND ${input.status} = 'APPROVED'
+      )
+      SELECT id, user_id, status, created_at, resolved_by, resolved_at FROM resolved`) as any[]
+    const row = resolved[0]
+    if (row) {
+      return {
+        changed: true,
+        request: { id: row.id, userId: row.user_id, status: row.status, createdAt: row.created_at, resolvedBy: row.resolved_by, resolvedAt: row.resolved_at },
+      }
+    }
+    const existing = (await sql`SELECT id, user_id, status, created_at, resolved_by, resolved_at
+      FROM membership_requests WHERE id = ${input.requestId} LIMIT 1`) as any[]
+    const prior = existing[0]
+    return {
+      changed: false,
+      request: prior
+        ? { id: prior.id, userId: prior.user_id, status: prior.status, createdAt: prior.created_at, resolvedBy: prior.resolved_by ?? null, resolvedAt: prior.resolved_at ?? null }
+        : null,
+    }
   }
   const db = getSqliteDb()
-  db.prepare(
-    `UPDATE membership_requests
-     SET status = ?, resolved_by = ?, resolved_at = ?
-     WHERE id = ? AND status = 'PENDING'`,
-  ).run(input.status, input.resolvedBy, resolvedAt, input.requestId)
+  const transaction = db.transaction(() => {
+    const updated = db.prepare(
+      `UPDATE membership_requests
+       SET status = ?, resolved_by = ?, resolved_at = ?
+       WHERE id = ? AND status = 'PENDING'`,
+    ).run(input.status, input.resolvedBy, resolvedAt, input.requestId)
+    if (updated.changes > 0 && input.status === "APPROVED") {
+      const row = db.prepare(`SELECT user_id FROM membership_requests WHERE id = ?`).get(input.requestId) as any
+      if (row?.user_id) db.prepare(`UPDATE users SET group_member = 1, updated_at = ? WHERE id = ?`).run(resolvedAt, row.user_id)
+    }
+    const row = db.prepare(`SELECT id, user_id, status, created_at, resolved_by, resolved_at FROM membership_requests WHERE id = ?`).get(input.requestId) as any
+    return { updated: updated.changes > 0, row }
+  })()
+  return {
+    changed: transaction.updated,
+    request: transaction.row
+      ? { id: transaction.row.id, userId: transaction.row.user_id, status: transaction.row.status, createdAt: transaction.row.created_at, resolvedBy: transaction.row.resolved_by ?? null, resolvedAt: transaction.row.resolved_at ?? null }
+      : null,
+  }
 }
 
 export async function listTeamMembers(): Promise<
@@ -1524,6 +1568,53 @@ export async function createNotification(
   return { ...(input as any), id, createdAt, readAt }
 }
 
+/** Persist one in-app editorial announcement per user and content record.
+ * The content identity makes repeated delivery attempts harmless; edits and
+ * recovered records never call this helper. */
+export async function createEditorialNotifications(input: {
+  userIds: string[]
+  type: Extract<NotificationType, "NEWS_PUBLISHED" | "ARTICLE_PUBLISHED">
+  title: string
+  body: string
+  url: string
+  contentType: "news" | "publication"
+  contentId: number
+}): Promise<void> {
+  const recipients = Array.from(new Set(input.userIds.filter(Boolean)))
+  if (recipients.length === 0) return
+  const createdAt = nowIso()
+  const metaJson = JSON.stringify({ category: "editorial", contentType: input.contentType, contentId: input.contentId })
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    await Promise.all(recipients.map(async (userId) => {
+      await sql`INSERT INTO notifications (id, user_id, type, title, body, url, meta, created_at, read_at)
+        SELECT ${crypto.randomUUID()}, ${userId}, ${input.type}, ${input.title}, ${input.body}, ${input.url}, ${metaJson}, ${createdAt}, NULL
+        WHERE NOT EXISTS (
+          SELECT 1 FROM notifications
+          WHERE user_id = ${userId}
+            AND type = ${input.type}
+            AND COALESCE(NULLIF(meta, '')::jsonb ->> 'contentId', '') = ${String(input.contentId)}
+        )`
+    }))
+    return
+  }
+  const db = getSqliteDb()
+  const insert = db.prepare(`INSERT INTO notifications (id, user_id, type, title, body, url, meta, created_at, read_at)
+    SELECT ?, ?, ?, ?, ?, ?, ?, ?, NULL
+    WHERE NOT EXISTS (
+      SELECT 1 FROM notifications
+      WHERE user_id = ? AND type = ? AND json_extract(meta, '$.contentId') = ?
+    )`)
+  const transaction = db.transaction(() => {
+    for (const userId of recipients) {
+      insert.run(crypto.randomUUID(), userId, input.type, input.title, input.body, input.url, metaJson, createdAt, userId, input.type, input.contentId)
+    }
+  })
+  transaction()
+}
+
 export async function listNotificationsForUser(userId: string, limit: number): Promise<Notification[]> {
   const safeLimit = Math.max(1, Math.min(100, Math.floor(limit)))
   if (shouldUsePostgres()) {
@@ -1606,6 +1697,34 @@ export async function markNotificationRead(userId: string, notificationId: strin
   }
 }
 
+/** Keep resolved group-request records for audit, but remove their actionable
+ * state and unread badges for every administrator who received the request. */
+export async function markMembershipRequestNotificationsResolved(requestId: string): Promise<void> {
+  const resolvedAt = nowIso()
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    await sql`UPDATE notifications
+      SET read_at = ${resolvedAt},
+          meta = jsonb_set(COALESCE(NULLIF(meta, '')::jsonb, '{}'::jsonb), '{resolvedAt}', to_jsonb(${resolvedAt}::text))::text
+      WHERE type = 'MEMBERSHIP_REQUEST'
+        AND COALESCE(NULLIF(meta, '')::jsonb ->> 'requestId', '') = ${requestId}`
+    return
+  }
+  const db = getSqliteDb()
+  const rows = db.prepare(`SELECT id, meta FROM notifications WHERE type = 'MEMBERSHIP_REQUEST'`).all() as any[]
+  const update = db.prepare(`UPDATE notifications SET read_at = ?, meta = ? WHERE id = ?`)
+  const transaction = db.transaction(() => {
+    for (const row of rows) {
+      const meta = safeJsonParse(row.meta)
+      if (meta?.requestId !== requestId) continue
+      update.run(resolvedAt, JSON.stringify({ ...meta, resolvedAt }), row.id)
+    }
+  })
+  transaction()
+}
+
 export async function getUserIdsByEmails(emails: string[]): Promise<string[]> {
   const normalized = Array.from(new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean)))
   if (normalized.length === 0) return []
@@ -1635,6 +1754,20 @@ export async function listNotifiableUserIds(): Promise<string[]> {
   const db = getSqliteDb()
   const rows = db.prepare(`SELECT id FROM users WHERE group_member = 1 OR role = 'PROFESSOR'`).all() as any[]
   return rows.map((r) => String(r.id))
+}
+
+/** Editorial announcements go to all existing GOTS accounts, not only group
+ * members or professors. */
+export async function listAllGotsUserIds(): Promise<string[]> {
+  if (shouldUsePostgres()) {
+    const sql = getPgSql()
+    if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
+    await ensurePgSchema()
+    const rows = (await sql`SELECT id FROM users`) as any[]
+    return rows.map((r) => String(r.id))
+  }
+  const db = getSqliteDb()
+  return (db.prepare(`SELECT id FROM users`).all() as any[]).map((r) => String(r.id))
 }
 
 export async function listStudents(): Promise<

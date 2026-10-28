@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { createNotification, getUserById, listNotifiableUserIds, resolveMembershipRequest, setUserGroupMember } from "@/lib/store"
+import { createNotification, getUserById, listNotifiableUserIds, markMembershipRequestNotificationsResolved, resolveMembershipRequest } from "@/lib/store"
 import { isGroupAdmin } from "@/lib/gots-access-policy.mjs"
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -20,10 +20,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   const status = action === "approve" ? "APPROVED" : "REJECTED"
-  await resolveMembershipRequest({ requestId: id, status: status as any, resolvedBy: resolverId })
-  if (status === "APPROVED") {
-    await setUserGroupMember(userId, true)
-    const joinedUser = await getUserById(userId).catch(() => null)
+  const resolution = await resolveMembershipRequest({ requestId: id, status: status as any, resolvedBy: resolverId })
+  if (!resolution.request) return NextResponse.json({ error: "Solicitud no encontrada" }, { status: 404 })
+
+  // Retain notification records but resolve the actionable state for every
+  // recipient, so all admin badges/pending lists converge after one decision.
+  await markMembershipRequestNotificationsResolved(id)
+
+  if (resolution.changed && status === "APPROVED") {
+    const joinedUser = await getUserById(resolution.request.userId).catch(() => null)
     const recipients = await listNotifiableUserIds().catch(() => [])
     await Promise.all(
       recipients
@@ -39,5 +44,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         ),
     ).catch(() => {})
   }
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, changed: resolution.changed, status: resolution.request.status })
 }
