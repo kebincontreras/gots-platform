@@ -8,6 +8,7 @@ import { Mail, GraduationCap } from "lucide-react"
 import { type Language, useLanguage } from "@/components/language-provider"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
+import { isGroupAdmin } from "@/lib/gots-access-policy.mjs"
 
 interface TeamMember {
   id: string | number
@@ -181,10 +182,7 @@ export default function EquipoPage() {
   const [legacyMembers, setLegacyMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null)
-  const isAdmin =
-    ["kebinandrescontreras@gmail.com", "rafael.torres@saber.uis.edu.co"].includes(
-      String((session?.user as any)?.email ?? "").trim().toLowerCase(),
-    )
+  const isAdmin = isGroupAdmin((session?.user as any)?.email)
   const ui: Record<Language, { teamTitle: string; loading: string; groupLabels: Record<GroupKey, string>; mailAria: string }> = {
     es: {
       teamTitle: "Equipo",

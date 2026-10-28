@@ -27,7 +27,7 @@ const sections = [
   },
 ]
 
-export function LabOverview() {
+export function LabOverview({ authenticated }: { authenticated: boolean }) {
   return (
     <main className="container mx-auto min-h-screen max-w-6xl px-4 pb-16 pt-28">
       <LabNavigation />
@@ -40,8 +40,8 @@ export function LabOverview() {
               Una organización única para el laboratorio dentro de GOTS. La cuenta GOTS será la entrada única; los permisos de cada sección se mantendrán separados y explícitos.
             </p>
           </div>
-          <Link className="inline-flex shrink-0 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground" href={getPagePath("/login?callbackUrl=/laboratorio/inventario")}>
-            Acceder con cuenta GOTS
+          <Link className="inline-flex shrink-0 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground" href={getPagePath(authenticated ? "/laboratorio/inventario" : "/login?callbackUrl=/laboratorio/inventario")}>
+            {authenticated ? "Abrir inventario" : "Acceder con cuenta GOTS"}
           </Link>
         </div>
       </section>

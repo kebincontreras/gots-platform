@@ -35,6 +35,7 @@ export function Header() {
     path === "/dashboard" ||
     path === "/editar" ||
     path?.startsWith("/profesor") ||
+    path?.startsWith("/laboratorio") ||
     path?.startsWith("/noticias/editor") ||
     path?.startsWith("/publicaciones/editor")
   const forceSolidHeader = isSolidHeaderPath(pathname) || isSolidHeaderPath(browserPathname)
