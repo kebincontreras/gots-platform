@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     }
     if (!isApprovedInstitutionalEmail(email)) {
       return NextResponse.json(
-        { error: "Solo se permite registro con correo institucional @correo.uis.edu.co o @uis.edu.co." },
+        { error: "Solo se permite registro con correo institucional @correo.uis.edu.co o @uis.edu.co, o una excepción autorizada." },
         { status: 403 },
       )
     }
