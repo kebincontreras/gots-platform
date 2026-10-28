@@ -2,17 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { createMembershipRequest, createNotification, getPendingMembershipRequestForUser, getUserById, getUserIdsByEmails } from "@/lib/store"
-
-function getAdminEmails(): string[] {
-  const raw =
-    process.env.GROUP_ADMIN_EMAILS ||
-    // Default as requested
-    "kebinandrescontreras@gmail.com,rafael.torres@saber.uis.edu.co"
-  return raw
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean)
-}
+import { GROUP_ADMIN_EMAILS } from "@/lib/gots-access-policy.mjs"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -35,7 +25,7 @@ export async function POST() {
   try {
     const created = await createMembershipRequest(userId)
     const user = await getUserById(userId)
-    const adminIds = await getUserIdsByEmails(getAdminEmails())
+    const adminIds = await getUserIdsByEmails(GROUP_ADMIN_EMAILS)
     await Promise.all(
       adminIds.map((adminId) =>
         createNotification({

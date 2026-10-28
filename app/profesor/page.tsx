@@ -7,6 +7,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { MembershipRequestsPanel } from "@/components/membership-requests-panel"
+import { isGroupAdmin } from "@/lib/gots-access-policy.mjs"
 
 export default async function ProfesorPage() {
   const session = await getServerSession(authOptions)
@@ -14,19 +15,10 @@ export default async function ProfesorPage() {
   const professorId = (session?.user as any)?.id as string | undefined
   const email = (session?.user as any)?.email as string | undefined
   if (!session?.user) redirect("/login?callbackUrl=/profesor")
-  if (role !== "PROFESSOR") redirect("/dashboard")
+  const groupAdmin = isGroupAdmin(email)
+  if (role !== "PROFESSOR" && !groupAdmin) redirect("/dashboard")
 
-  const isGroupAdmin = (() => {
-    const normalized = (email ?? "").trim().toLowerCase()
-    if (!normalized) return false
-    const list = (process.env.GROUP_ADMIN_EMAILS ?? process.env.PROFESSOR_EMAILS ?? "")
-      .split(",")
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean)
-    return list.includes(normalized)
-  })()
-
-  const students = isGroupAdmin || !professorId ? await listStudents() : await listStudentsByDirector(professorId)
+  const students = groupAdmin || !professorId ? await listStudents() : await listStudentsByDirector(professorId)
 
   return (
     <main className="min-h-screen">
@@ -60,9 +52,7 @@ export default async function ProfesorPage() {
           </div>
         </div>
 
-        <div className="mt-6">
-          <MembershipRequestsPanel />
-        </div>
+        {groupAdmin ? <div className="mt-6"><MembershipRequestsPanel /></div> : null}
       </div>
       <Footer />
     </main>

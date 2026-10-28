@@ -2,20 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { createNotification, getUserById, listNotifiableUserIds, resolveMembershipRequest, setUserGroupMember } from "@/lib/store"
-
-function isGroupAdmin(email: string | undefined | null) {
-  const normalized = (email ?? "").trim().toLowerCase()
-  if (!normalized) return false
-  const list = (process.env.GROUP_ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean)
-  // Fallback to the two admins requested if env is not set.
-  if (list.length === 0) {
-    return normalized === "kebinandrescontreras@gmail.com" || normalized === "rafael.torres@saber.uis.edu.co"
-  }
-  return list.includes(normalized)
-}
+import { isGroupAdmin } from "@/lib/gots-access-policy.mjs"
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

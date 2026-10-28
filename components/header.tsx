@@ -9,6 +9,7 @@ import { getPagePath } from "@/lib/utils"
 import { useLanguage } from "@/components/language-provider"
 import { NotificationsBell } from "@/components/notifications-bell"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { isGroupAdmin } from "@/lib/gots-access-policy.mjs"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,7 +28,7 @@ export function Header() {
   const { data: session } = useSession()
   const { language, setLanguage, t } = useLanguage()
   const pathname = usePathname()
-  const forceSolidHeader = pathname === "/dashboard" || pathname?.startsWith("/profesor")
+  const forceSolidHeader = pathname === "/dashboard" || pathname?.startsWith("/profesor") || pathname?.startsWith("/noticias/editor") || pathname?.startsWith("/publicaciones/editor")
   const gotsLabHref = getPagePath("/laboratorio")
 
   useEffect(() => {
@@ -79,6 +80,7 @@ export function Header() {
   const fullName = (userDisplayName || (session?.user as any)?.name || (session?.user as any)?.email || "").toString().trim()
   const firstName = (fullName.split(/\s+/)[0] || fullName || "Cuenta").trim()
   const initials = (firstName[0] || "U").toUpperCase()
+  const isMembershipAdmin = isGroupAdmin((session?.user as any)?.email)
 
   const navItems = [
     { href: "/", label: t("nav.home"), isSection: false },
@@ -115,13 +117,15 @@ export function Header() {
             {navItems.map((item) => {
               // Simplificar la lógica para evitar errores de hidratación
               const finalHref = item.isSection ? item.href : getPagePath(item.href);
+              const isActive = item.href === "/" ? pathname === "/" : pathname === item.href || pathname?.startsWith(`${item.href}/`)
               
               return (
                 <a
                   key={item.href}
                   href={finalHref}
-                  className={`text-sm font-sans font-medium transition-colors ${
-                    isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
+                  aria-current={isActive ? "page" : undefined}
+                  className={`text-sm font-sans font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 ${
+                    isScrolled || forceSolidHeader ? `${isActive ? "text-gold" : "text-foreground"} hover:text-gold` : `${isActive ? "text-gold" : "text-white"} hover:text-gold`
                   }`}
                 >
                   {item.label}
@@ -130,7 +134,7 @@ export function Header() {
             })}
             <a
               href={gotsLabHref}
-              className={`text-sm font-sans font-medium transition-colors ${
+              className={`text-sm font-sans font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 ${
                 isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
               }`}
             >
@@ -195,7 +199,7 @@ export function Header() {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {(session.user as any).role === "PROFESSOR" ? (
+                    {(session.user as any).role === "PROFESSOR" || isMembershipAdmin ? (
                       <>
                         <DropdownMenuItem asChild>
                           <a href="/profesor">Panel</a>
@@ -248,7 +252,7 @@ export function Header() {
             ) : (
               <a
                 href="/login"
-                className={`text-sm font-sans font-medium transition-colors ${
+                className={`text-sm font-sans font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 ${
                   isScrolled || forceSolidHeader ? "text-foreground hover:text-gold" : "text-white hover:text-gold"
                 }`}
               >
@@ -279,7 +283,7 @@ export function Header() {
                 <a
                   key={item.href}
                   href={finalHref}
-                  className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
+                  className="text-sm font-sans font-semibold text-foreground hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {item.label}
@@ -288,7 +292,7 @@ export function Header() {
             })}
             <a
               href={gotsLabHref}
-              className="text-sm font-sans font-medium text-foreground hover:text-accent transition-colors"
+              className="text-sm font-sans font-semibold text-foreground hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 transition-colors"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Labs
@@ -329,7 +333,7 @@ export function Header() {
                     </div>
                   </div>
                   <div className="pt-2 text-xs font-semibold uppercase text-muted-foreground">Configuración</div>
-                {(session.user as any).role === "PROFESSOR" ? (
+                {(session.user as any).role === "PROFESSOR" || isMembershipAdmin ? (
                   <>
                     <a
                       href="/profesor"

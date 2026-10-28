@@ -21,13 +21,12 @@ export async function GET(req: Request) {
   const url = new URL(req.url)
   const mineRequested = url.searchParams.get("mine") === "1"
   const userId = (session?.user as any)?.id as string | undefined
-  const role = (session?.user as any)?.role as string | undefined
   if (mineRequested && (!session?.user || !userId)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   try {
     const items =
-      mineRequested && userId && role !== "PROFESSOR" ? await listNewsByUser(userId) : await listNews()
+      mineRequested && userId ? await listNewsByUser(userId) : await listNews()
     if (!mineRequested && Array.isArray(items) && items.length === 0) {
       return NextResponse.json({ news: readStaticNewsFallback() })
     }

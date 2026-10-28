@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { deletePublication, getPublicationOwner, updatePublication } from "@/lib/store"
+import { canManageOwnedContent } from "@/lib/gots-access-policy.mjs"
 
 function normalizeDriveDownloadUrl(raw: string): string {
   const trimmed = raw.trim()
@@ -29,14 +30,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params
   const session = await getServerSession(authOptions)
   const userId = (session?.user as any)?.id as string | undefined
-  const role = (session?.user as any)?.role as string | undefined
   if (!session?.user || !userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const numericId = Number(id)
   if (!Number.isFinite(numericId)) return NextResponse.json({ error: "Invalid id" }, { status: 400 })
 
   const owner = await getPublicationOwner(numericId)
-  const canEdit = role === "PROFESSOR" || owner === userId
+  const canEdit = canManageOwnedContent(userId, owner)
   if (!canEdit) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const body = await req.json().catch(() => null)
@@ -67,14 +67,13 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const { id } = await params
   const session = await getServerSession(authOptions)
   const userId = (session?.user as any)?.id as string | undefined
-  const role = (session?.user as any)?.role as string | undefined
   if (!session?.user || !userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const numericId = Number(id)
   if (!Number.isFinite(numericId)) return NextResponse.json({ error: "Invalid id" }, { status: 400 })
 
   const owner = await getPublicationOwner(numericId)
-  const canDelete = role === "PROFESSOR" || owner === userId
+  const canDelete = canManageOwnedContent(userId, owner)
   if (!canDelete) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   await deletePublication(numericId)

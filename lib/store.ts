@@ -3,6 +3,7 @@ import fs from "node:fs"
 import path from "node:path"
 import crypto from "node:crypto"
 import { neon, Pool } from "@neondatabase/serverless"
+import { GROUP_ADMIN_EMAILS, isGroupAdmin } from "./gots-access-policy.mjs"
 
 export type Role = "PROFESSIONAL" | "GUEST" | "STUDENT" | "EXTERNAL_RESEARCHER" | "PROFESSOR" | "EDITOR_NOTICIAS"
 
@@ -144,20 +145,11 @@ function safeJsonParse(value: unknown): Record<string, any> | null {
 }
 
 function getGroupAdminEmails(): string[] {
-  const raw =
-    process.env.GROUP_ADMIN_EMAILS ||
-    // Default as requested
-    "kebinandrescontreras@gmail.com,rafael.torres@saber.uis.edu.co"
-  return raw
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean)
+  return [...GROUP_ADMIN_EMAILS]
 }
 
 function isGroupAdminEmail(email: string | null | undefined) {
-  const normalized = (email ?? "").trim().toLowerCase()
-  if (!normalized) return false
-  return getGroupAdminEmails().includes(normalized)
+  return isGroupAdmin(email)
 }
 
 function adminDefaultMemberCategory(email: string) {
@@ -2137,6 +2129,12 @@ export async function listPublications(): Promise<Publication[]> {
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }))
+}
+
+/** Editor listings are scoped to the authenticated creator; public listings
+ * continue to use listPublications(). */
+export async function listPublicationsByUser(userId: string): Promise<Publication[]> {
+  return (await listPublications()).filter((publication) => publication.createdBy === userId)
 }
 
 export async function createPublication(

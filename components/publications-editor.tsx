@@ -59,7 +59,7 @@ export function PublicationsEditor() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch("/api/publications")
+      const res = await fetch("/api/publications?mine=1")
       const body = await res.json()
       setItems(Array.isArray(body?.publications) ? body.publications : [])
     } catch (e: any) {

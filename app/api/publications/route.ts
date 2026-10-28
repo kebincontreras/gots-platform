@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { createNotification, createPublication, listNotifiableUserIds, listPublications } from "@/lib/store"
+import { createNotification, createPublication, listNotifiableUserIds, listPublications, listPublicationsByUser } from "@/lib/store"
 import fs from "node:fs"
 import path from "node:path"
 
@@ -34,15 +34,19 @@ function readStaticPublicationsFallback() {
   return Array.isArray(parsed?.publications) ? parsed.publications : []
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const session = await getServerSession(authOptions)
+  const userId = (session?.user as any)?.id as string | undefined
+  const mineRequested = new URL(req.url).searchParams.get("mine") === "1"
+  if (mineRequested && (!session?.user || !userId)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   try {
-    const items = await listPublications()
-    if (Array.isArray(items) && items.length === 0) {
+    const items = mineRequested && userId ? await listPublicationsByUser(userId) : await listPublications()
+    if (!mineRequested && Array.isArray(items) && items.length === 0) {
       return NextResponse.json({ publications: readStaticPublicationsFallback() })
     }
     return NextResponse.json({ publications: items })
   } catch {
-    const items = readStaticPublicationsFallback()
+    const items = mineRequested ? [] : readStaticPublicationsFallback()
     return NextResponse.json({ publications: items })
   }
 }
