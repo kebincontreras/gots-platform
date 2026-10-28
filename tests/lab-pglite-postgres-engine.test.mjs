@@ -34,10 +34,12 @@ async function harness() {
   }
   await q("CREATE TABLE users (id text PRIMARY KEY, email text NOT NULL UNIQUE, name text NOT NULL, password_hash text NOT NULL, role text NOT NULL, created_at text NOT NULL, updated_at text NOT NULL)")
   const schema = await fs.readFile(new URL("../migrations/labs/0002_empty_labs_schema.sql", import.meta.url), "utf8")
+  const inventoryImagesSchema = await fs.readFile(new URL("../migrations/labs/0003_private_inventory_images.sql", import.meta.url), "utf8")
   // PGlite's parameterised protocol accepts one statement at a time, like a
   // normal driver prepared query. The production migration was executed by
   // Neon as individual DDL statements.
   for (const statement of schema.split(/;\s*(?:\r?\n|$)/)) if (statement.trim()) await q(statement)
+  for (const statement of inventoryImagesSchema.split(/;\s*(?:\r?\n|$)/)) if (statement.trim()) await q(statement)
   for (const id of Object.values(ids)) await q("INSERT INTO users VALUES ($1,$2,'Test','x','STUDENT','now','now')", [id, `${id}@example.test`])
   await q("INSERT INTO lab_memberships(gots_user_id,scope,approved_by,approved_at) VALUES ($1,'approved',$2,'now'),($3,'approved',$2,'now'),($4,'approved',$2,'now')", [ids.owner, ids.admin, ids.member, ids.responsible])
   await q("INSERT INTO lab_admins(user_id) VALUES ($1)", [ids.admin])
@@ -69,4 +71,16 @@ test("PGlite PostgreSQL engine accepts the reviewed schema and rolls back a fail
   } finally {
     await db.close()
   }
+})
+
+test("PGlite private inventory images are keyed to a real item and retrieved through the adapter", async () => {
+  const { db, q, adapter } = await harness()
+  try {
+    const bytes = Buffer.from("RIFF....WEBPfixture")
+    await q("INSERT INTO lab_inventory_images(inventory_item_id,media_type,size_bytes,sha256,content,created_at) VALUES($1,'image/webp',$2,'fixture',$3,'now')", [ids.item, bytes.length, bytes])
+    const image = (await adapter.getInventoryImage({ inventoryItemId: ids.item }))[0]
+    assert.equal(image.media_type, "image/webp")
+    assert.deepEqual(Buffer.from(image.content), bytes)
+    assert.throws(() => adapter.getInventoryImage({ inventoryItemId: "not-a-uuid" }), /invalid/)
+  } finally { await db.close() }
 })
