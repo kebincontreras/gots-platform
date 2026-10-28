@@ -28,7 +28,16 @@ export function Header() {
   const { data: session } = useSession()
   const { language, setLanguage, t } = useLanguage()
   const pathname = usePathname()
-  const forceSolidHeader = pathname === "/dashboard" || pathname === "/editar" || pathname?.startsWith("/profesor") || pathname?.startsWith("/noticias/editor") || pathname?.startsWith("/publicaciones/editor")
+  // `usePathname()` can momentarily retain the previous route in this shared
+  // client header. The browser path makes the editor header deterministic too.
+  const browserPathname = typeof window === "undefined" ? "" : window.location.pathname
+  const isSolidHeaderPath = (path: string | null | undefined) =>
+    path === "/dashboard" ||
+    path === "/editar" ||
+    path?.startsWith("/profesor") ||
+    path?.startsWith("/noticias/editor") ||
+    path?.startsWith("/publicaciones/editor")
+  const forceSolidHeader = isSolidHeaderPath(pathname) || isSolidHeaderPath(browserPathname)
   const gotsLabHref = getPagePath("/laboratorio")
 
   useEffect(() => {
