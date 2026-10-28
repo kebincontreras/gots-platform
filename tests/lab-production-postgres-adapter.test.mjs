@@ -16,6 +16,15 @@ test("workflow adapter uses injected transaction for stock-reserving writes",asy
   assert.match(calls[0].sql,/FOR UPDATE/);assert.match(calls[3].sql,/INSERT INTO lab_loans/)
 })
 
+test("workflow adapter exposes catalogue filter values as strings",async()=>{
+  const a=createGotsPostgresLabWorkflowAdapter({
+    query:async sql=>sql.includes("DISTINCT category")?[{category:"Óptica"}]:[{box_label:"A-1"}],
+    transaction:work=>work(async()=>[]),
+  })
+  assert.deepEqual(await a.categories(),["Óptica"])
+  assert.deepEqual(await a.boxes("Óptica"),["A-1"])
+})
+
 test("sensitive workflow writes bind actor authorization in SQL",async()=>{
   const calls=[];const q=async(sql,args)=>{calls.push({sql,args});return []};const a=createGotsPostgresLabWorkflowAdapter({query:q,transaction:work=>work(q)})
   await a.addAttachment({id:"11111111-1111-4111-8111-111111111111",experimentId:"22222222-2222-4222-8222-222222222222",actorId:"33333333-3333-4333-8333-333333333333",path:"x",mediaType:"image/png",at:"now"})
