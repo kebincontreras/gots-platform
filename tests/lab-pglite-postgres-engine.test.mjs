@@ -84,3 +84,15 @@ test("PGlite private inventory images are keyed to a real item and retrieved thr
     assert.throws(() => adapter.getInventoryImage({ inventoryItemId: "not-a-uuid" }), /invalid/)
   } finally { await db.close() }
 })
+
+test("PGlite reserves a selected kit component by quantity and rejects a competing request", async () => {
+  const { db, q, adapter } = await harness()
+  const kit = "99999999-9999-4999-8999-999999999997", piece = "99999999-9999-4999-8999-999999999998"
+  try {
+    await q("INSERT INTO lab_inventory_items(id,location_id,name,quantity_total,created_at,updated_at) VALUES($1,$2,'Kit de lentes',1,'now','now')", [kit, ids.location])
+    await q("INSERT INTO lab_inventory_items(id,location_id,name,quantity_total,kit_parent_id,created_at,updated_at) VALUES($1,$2,'Lente seleccionada',2,$3,'now','now')", [piece, ids.location, kit])
+    await adapter.createLoan({ id: "99999999-9999-4999-8999-999999999996", requesterId: ids.member, responsibleId: ids.responsible, items: [{ inventoryItemId: piece, quantity: 2 }], purpose: "óptica", usageStart: "2027-01-01", usageEnd: "2027-01-02", createdAt: "now" })
+    await assert.rejects(adapter.createLoan({ id: "99999999-9999-4999-8999-999999999995", requesterId: ids.owner, responsibleId: ids.responsible, items: [{ inventoryItemId: piece, quantity: 1 }], purpose: "óptica", usageStart: "2027-01-01", usageEnd: "2027-01-02", createdAt: "now" }), /insufficient/)
+    assert.equal((await q("SELECT count(*)::integer AS count FROM lab_loan_items WHERE inventory_item_id=$1", [piece]))[0].count, 1)
+  } finally { await db.close() }
+})
