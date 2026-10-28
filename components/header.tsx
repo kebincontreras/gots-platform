@@ -28,7 +28,7 @@ export function Header() {
   const { data: session } = useSession()
   const { language, setLanguage, t } = useLanguage()
   const pathname = usePathname()
-  const forceSolidHeader = pathname === "/dashboard" || pathname?.startsWith("/profesor") || pathname?.startsWith("/noticias/editor") || pathname?.startsWith("/publicaciones/editor")
+  const forceSolidHeader = pathname === "/dashboard" || pathname === "/editar" || pathname?.startsWith("/profesor") || pathname?.startsWith("/noticias/editor") || pathname?.startsWith("/publicaciones/editor")
   const gotsLabHref = getPagePath("/laboratorio")
 
   useEffect(() => {
