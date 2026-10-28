@@ -39,7 +39,7 @@ export function LabAccessPanel({
           </>
         ) : (
           <p className="mt-6 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
-            Tu sesión de GOTS está activa, pero no existe un permiso de laboratorio aprobado para esta cuenta. El acceso se mantiene bloqueado hasta conectar una fuente de permisos autorizada; el correo y el rol de GOTS no conceden acceso automáticamente.
+            Inicia sesión con tu cuenta GOTS para acceder a Labs.
           </p>
         )}
       </section>

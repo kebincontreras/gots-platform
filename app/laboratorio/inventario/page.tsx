@@ -4,5 +4,5 @@ import { getLaboratoryContext, LabModuleSection } from "@/lib/lab-module"
 
 export default async function LaboratoryInventoryPage() {
   const { authorization, identity, role } = await getLaboratoryContext(LabModuleSection.INVENTORY)
-  return <><Header /><LabAccessPanel active={LabModuleSection.INVENTORY} title="Inventario" description="Consulta equipos ópticos y su disponibilidad cuando tu permiso individual de laboratorio esté aprobado." allowed={authorization.allowed} identity={identity} role={role} /></>
+  return <><Header /><LabAccessPanel active={LabModuleSection.INVENTORY} title="Inventario" description="Consulta equipos ópticos y su disponibilidad con tu sesión GOTS." allowed={authorization.allowed} identity={identity} role={role} /></>
 }

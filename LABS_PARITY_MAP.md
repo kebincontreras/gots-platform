@@ -4,7 +4,7 @@ Source reviewed: local `../GOTS_LAB` checkout. This is a precise local-preview c
 
 | GOTS_LAB capability | Original source | Local GOTS Labs preview | Deliberately still absent |
 | --- | --- | --- | --- |
-| Identity and access | `src/hooks/useAuth.ts`, profile RLS | Existing NextAuth session; development-only UUID grants in isolated SQLite | Production membership relation/migration |
+| Identity and access | `src/hooks/useAuth.ts`, profile RLS | Existing NextAuth session is the ordinary Labs gate; development fixtures remain isolated | Explicit administrators and loan responsibles are configured separately |
 | Inventory and availability | `queries/inventory.ts`; `00028_prestamos.sql` | Read-only local catalogue API preserves top-level-only browsing, locations, categories, boxes, kit-child aggregate availability, text/location/category filters and synthetic item history; pending loans and active experiment items share one SQLite stock transaction | Imported catalogue quantities/photos and the original complete browse/detail UI |
 | Loan request | `queries/loans.ts:152-228` | Persistent pending request, dates, purpose, selected local responsible UUID, per-item quantities and explicit simulated acknowledgement | Multi-item cart UI, extension and lost/stolen UI |
 | Loan decision/return | `queries/loans.ts:331-457` | Responsible-only approve/reject, requester/responsible return, overdue refresh and restart persistence | Real legal acceptance and notifications |
@@ -37,7 +37,7 @@ Reservation clarification: original `get_inventory_availability()` counts loans 
 
 ## Production integration status
 
-1. Done: existing NextAuth `users.id` remains the sole account identity; `lab_memberships` is a separate explicit relation keyed by it.
+1. Done: existing NextAuth `users.id` remains the sole account identity; every authenticated GOTS user enters Labs. `lab_memberships` remains as non-gating legacy metadata, while `lab_admins` and `lab_loan_responsibles` remain explicit grants.
 2. Done: the additive schema was applied to the verified existing GOTS Neon destination. It starts empty; no user mapping/import was performed.
 3. Done in code, pending publication: all Labs handlers use the server-side adapter. The production adapter never derives access from email/domain/role or fixture flags.
 4. Pending by design: database-blob attachments are implemented but disabled until an operator accepts the 5 MiB-per-file/25 MiB-per-experiment quota and backup impact. Notification email/webhooks are not implemented or enabled.

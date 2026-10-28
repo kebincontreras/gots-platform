@@ -6,43 +6,43 @@ import { createDisabledLabProductionAdapter, validateLabIdentityMapping } from "
 
 const now = 1_800_000_000_000
 
-test("disabled laboratory gateway denies every account by default", async () => {
+test("a valid GOTS identity enters Labs even without legacy membership metadata", async () => {
   const gateway = createLabModuleGateway()
   const identity = await gateway.getIdentity("gots-user", now + 60_000)
   assert.equal(identity.labAccessScope, LabAccessScope.NONE)
-  assert.deepEqual(authorizeLabSection(identity, LabModuleSection.INVENTORY, now), { allowed: false, reason: "approved-lab-membership-required" })
+  assert.deepEqual(authorizeLabSection(identity, LabModuleSection.INVENTORY, now), { allowed: true, reason: "authenticated-gots-user" })
 })
 
-test("mock gateway grants only an explicit individual grant", async () => {
+test("legacy grants do not change ordinary authenticated access", async () => {
   const gateway = createLabModuleGateway({
     mode: "mock",
     grants: { "approved-user": { labAccessScope: LabAccessScope.APPROVED_LAB_MEMBER } },
   })
   const approved = await gateway.getIdentity("approved-user", now + 60_000)
   const unapproved = await gateway.getIdentity("uis-email-is-not-a-grant", now + 60_000)
-  assert.deepEqual(authorizeLabSection(approved, LabModuleSection.EXPERIMENTS, now), { allowed: true, reason: "approved-lab-member" })
-  assert.deepEqual(authorizeLabSection(unapproved, LabModuleSection.EXPERIMENTS, now), { allowed: false, reason: "approved-lab-membership-required" })
+  assert.deepEqual(authorizeLabSection(approved, LabModuleSection.EXPERIMENTS, now), { allowed: true, reason: "authenticated-gots-user" })
+  assert.deepEqual(authorizeLabSection(unapproved, LabModuleSection.EXPERIMENTS, now), { allowed: true, reason: "authenticated-gots-user" })
 })
 
-test("an external grant is limited to loans", async () => {
+test("legacy external metadata does not limit authenticated users", async () => {
   const gateway = createLabModuleGateway({
     mode: "mock",
     grants: { external: { labAccessScope: LabAccessScope.EXTERNAL } },
   })
   const identity = await gateway.getIdentity("external", now + 60_000)
-  assert.deepEqual(authorizeLabSection(identity, LabModuleSection.LOANS, now), { allowed: true, reason: "loan-request" })
-  assert.deepEqual(authorizeLabSection(identity, LabModuleSection.INVENTORY, now), { allowed: false, reason: "approved-lab-membership-required" })
+  assert.deepEqual(authorizeLabSection(identity, LabModuleSection.LOANS, now), { allowed: true, reason: "authenticated-gots-user" })
+  assert.deepEqual(authorizeLabSection(identity, LabModuleSection.INVENTORY, now), { allowed: true, reason: "authenticated-gots-user" })
 })
 
-test("a UIS-looking synthetic account never becomes an external requester by itself", async () => {
+test("a normal authenticated GOTS identity can request access without external metadata", async () => {
   const gateway = createLabModuleGateway({
     mode: "mock",
     grants: { "legacy-external-record": { labAccessScope: LabAccessScope.EXTERNAL } },
   })
   const institutional = await gateway.getIdentity("student@correo.uis.edu.co", now + 60_000)
   const legacyExternal = await gateway.getIdentity("legacy-external-record", now + 60_000)
-  assert.deepEqual(authorizeLabSection(institutional, LabModuleSection.LOANS, now), { allowed: false, reason: "lab-access-required" })
-  assert.deepEqual(authorizeLabSection(legacyExternal, LabModuleSection.LOANS, now), { allowed: true, reason: "loan-request" })
+  assert.deepEqual(authorizeLabSection(institutional, LabModuleSection.LOANS, now), { allowed: true, reason: "authenticated-gots-user" })
+  assert.deepEqual(authorizeLabSection(legacyExternal, LabModuleSection.LOANS, now), { allowed: true, reason: "authenticated-gots-user" })
 })
 
 test("laboratory callback paths use the public Spanish routes", () => {

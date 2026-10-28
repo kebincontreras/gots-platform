@@ -8,21 +8,21 @@ const sections = [
     href: "/laboratorio/inventario",
     title: "Inventario",
     description: "Equipos, ubicaciones, disponibilidad y reservas para el trabajo del grupo.",
-    note: "Acceso con membresía individual aprobada",
+    note: "Disponible para cuentas autenticadas de GOTS",
     icon: PackageSearch,
   },
   {
     href: "/laboratorio/experimentos",
     title: "Experimentos",
     description: "Trazabilidad, participantes, sesiones y equipos asociados a cada práctica.",
-    note: "Acceso con membresía individual aprobada",
+    note: "Disponible para cuentas autenticadas de GOTS",
     icon: FlaskConical,
   },
   {
     href: "/laboratorio/prestamos",
     title: "Préstamos",
     description: "Solicitudes, responsables y seguimiento de equipos fuera del laboratorio.",
-    note: "Acceso con membresía y responsable autorizado",
+    note: "Solicitud para cuentas GOTS; decisión por responsable autorizado",
     icon: Handshake,
   },
 ]
@@ -60,7 +60,7 @@ export function LabOverview() {
       <section className="mt-6 flex gap-3 rounded-xl border border-sky-500/25 bg-sky-500/5 p-5 text-sm text-muted-foreground">
         <ShieldCheck aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-sky-700 dark:text-sky-300" />
         <p>
-          Esta vista no muestra datos ni concede permisos. Inventario y experimentos requieren una membresía individual aprobada; los préstamos conservan responsables y reglas explícitas.
+          Esta vista no muestra datos ni concede privilegios. Labs requiere una sesión GOTS; los experimentos conservan controles de propietario y colaboración, y los préstamos responsables explícitos.
         </p>
       </section>
     </main>

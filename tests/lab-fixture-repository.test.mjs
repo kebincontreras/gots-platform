@@ -14,11 +14,11 @@ test("approved synthetic GOTS member can list and request an available inventory
   })
 })
 
-test("unapproved synthetic user cannot read or reserve inventory", async () => {
+test("an authenticated synthetic user without legacy metadata can read and reserve inventory", async () => {
   const repo = createFixtureLabRepository()
   const identity = { subject: "local-no-grant", sessionExpiresAt: now + 1000, labAccessScope: LabAccessScope.NONE }
-  await assert.rejects(repo.listInventory(identity, now), /lab-access-denied/)
-  await assert.rejects(repo.reserveInventory(identity, "fixture-laser-01", now), /lab-access-denied/)
+  assert.equal((await repo.listInventory(identity, now)).length, 2)
+  assert.equal((await repo.reserveInventory(identity, "fixture-laser-01", now)).status, "requested")
 })
 
 test("fixture inventory rejects unavailable equipment", async () => {

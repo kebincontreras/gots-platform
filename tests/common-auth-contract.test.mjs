@@ -38,15 +38,15 @@ test("GOTS_LAB link never contains identity data and has a safe return route", (
   assert.equal(buildGotsLabHref({ baseUrl: "//attacker.example", returnPath: "/dashboard" }).startsWith(DEFAULT_GOTS_LAB_URL), true)
 })
 
-test("lab access requires an explicit approved-member claim, not email affiliation", () => {
+test("every authenticated GOTS user can enter Labs without a membership grant", () => {
   const now = 1_800_000_000_000
   const approved = { subject: "mock-uis", email: "member@uis.edu.co", labAccessScope: LabAccessScope.APPROVED_LAB_MEMBER, sessionExpiresAt: now + 60_000 }
   const uisWithoutApproval = { subject: "mock-uis-unapproved", email: "student@correo.uis.edu.co", labAccessScope: LabAccessScope.NONE, sessionExpiresAt: now + 60_000 }
   const external = { subject: "mock-external", email: "visitor@example.com", labAccessScope: LabAccessScope.EXTERNAL, sessionExpiresAt: now + 60_000 }
-  assert.deepEqual(authorizeGotsLab(approved, "inventory", now), { allowed: true, reason: "approved-lab-member" })
-  assert.deepEqual(authorizeGotsLab(uisWithoutApproval, "inventory", now), { allowed: false, reason: "approved-lab-membership-required" })
-  assert.deepEqual(authorizeGotsLab(external, "inventory", now), { allowed: false, reason: "approved-lab-membership-required" })
-  assert.deepEqual(authorizeGotsLab(external, "loan-request", now), { allowed: true, reason: "loan-request" })
+  assert.deepEqual(authorizeGotsLab(approved, "inventory", now), { allowed: true, reason: "authenticated-gots-user" })
+  assert.deepEqual(authorizeGotsLab(uisWithoutApproval, "inventory", now), { allowed: true, reason: "authenticated-gots-user" })
+  assert.deepEqual(authorizeGotsLab(external, "inventory", now), { allowed: true, reason: "authenticated-gots-user" })
+  assert.deepEqual(authorizeGotsLab(external, "loan-request", now), { allowed: true, reason: "authenticated-gots-user" })
 })
 
 test("missing claims and expired sessions deny non-public access", () => {
