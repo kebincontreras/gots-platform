@@ -166,8 +166,10 @@ function LabCatalogueView({ professor, onBack }: { professor: GroupProfessor; on
   }
 
   const buildingOf = (item: InventoryItem) => locations.find((l) => l.id === item.location_id)?.building ?? null
-  // El detalle trae el kit y el historial; los números de disponibilidad ya vienen en la lista.
-  const current: InventoryDetail | null = selected ? { ...selected, ...(detail ?? {}) } : null
+  // El detalle trae el kit, la ubicación y el historial. Pero para un kit sus propias
+  // cantidades son las del padre (1), no la suma de sus piezas: los números de
+  // disponibilidad que se muestran son los de la lista, así que esos mandan.
+  const current: InventoryDetail | null = selected ? { ...(detail ?? {}), ...selected } : null
 
   return (
     <section className="mt-6 rounded-xl border bg-card p-6">
@@ -206,8 +208,8 @@ function LabCatalogueView({ professor, onBack }: { professor: GroupProfessor; on
       {loading ? (
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex min-h-40 animate-pulse items-center gap-6 rounded-xl border p-6">
-              <div className="h-28 w-28 shrink-0 rounded-lg bg-muted" />
+            <div key={i} className="flex min-h-44 animate-pulse items-center gap-6 rounded-xl border p-6">
+              <div className="h-32 w-32 shrink-0 rounded-lg bg-muted" />
               <div className="flex-1 space-y-2">
                 <div className="h-5 w-3/4 rounded bg-muted" />
                 <div className="h-4 w-1/2 rounded bg-muted" />
@@ -224,13 +226,13 @@ function LabCatalogueView({ professor, onBack }: { professor: GroupProfessor; on
       ) : (
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {items.map((item) => (
-            <button type="button" key={item.id} className="flex min-h-40 items-center rounded-xl border p-6 text-left transition-colors hover:bg-muted" onClick={() => open(item)}>
-              <div className="flex w-full items-center gap-6">
-                {hasImage(item) && <img className="h-28 w-28 shrink-0 rounded-lg bg-white object-contain" src={imageSrc(item)} alt="" loading="lazy" decoding="async" />}
+            <button type="button" key={item.id} className="flex min-h-44 items-center rounded-xl border p-6 text-left transition-colors hover:bg-muted" onClick={() => open(item)}>
+              <div className="flex w-full items-center gap-5">
+                {hasImage(item) && <img className="h-32 w-32 shrink-0 rounded-lg bg-white object-cover" src={imageSrc(item)} alt="" loading="lazy" decoding="async" />}
                 <div className="min-w-0">
                   <div className="text-xl font-medium leading-snug">{item.name}</div>
                   <div className="mt-2 text-base text-muted-foreground">{item.reference || "Sin referencia"} · {item.location} · {item.category || "Sin categoría"}</div>
-                  <div className="mt-3 text-lg">
+                  <div className="mt-3 text-base sm:text-lg">
                     {item.quantity_available}/{item.quantity_total} disponibles · {item.quantity_reserved} reservadas{kitPieces(item) > 0 ? ` · kit con ${kitPieces(item)} piezas` : ""}
                   </div>
                 </div>
@@ -245,7 +247,7 @@ function LabCatalogueView({ professor, onBack }: { professor: GroupProfessor; on
           {current && (
             <>
               <DialogHeader>
-                <DialogTitle>{current.name}</DialogTitle>
+                <DialogTitle className="pr-8 leading-snug">{current.name}</DialogTitle>
                 <DialogDescription>{current.reference ? `Referencia: ${current.reference}` : "Sin referencia"}</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">

@@ -128,6 +128,12 @@ Lo que comprobé: los dos inician sesión, cada uno entra a su panel y es rediri
 
 **Segundo ajuste (rama `fix/inventario-lista-mas-grande`):** la lista compacta quedaba pequeña para la cantidad de información que lleva cada equipo. Agrandé los elementos: miniatura de 112 px (antes 64) que ahora se ve completa sobre fondo blanco y no recortada, nombre en 20 px, la línea de referencia/ubicación/categoría en 16 px, la de disponibilidad en 18 px, más relleno y esquinas más redondeadas, con una altura mínima para que las tarjetas con y sin foto queden parejas. Sigue en dos columnas.
 
+**Tercer ajuste, con la página ya vista renderizada (rama `fix/inventario-modal-y-fotos`):** el responsable seguía viendo "todo igual de pequeño". Hasta ese momento yo solo había comprobado el código y la API; para revisarlo de verdad monté un navegador automático (Playwright sobre Brave, instalado en una carpeta temporal fuera del repo), inicié sesión con el usuario estudiante y fotografié la página. Lo que vi:
+- **La causa del "pequeño" era el ancho de la página, no el tamaño de las tarjetas.** Las páginas de Labs (`lab-access-panel.tsx`) usaban un contenedor de `max-w-5xl` (1024 px), y dentro de él dos tarjetas anidadas con relleno. Quedaban dos columnas de ~440 px con la foto a la izquierda, y el texto se partía en dos líneas ("0 / reservadas"). Pasé el contenedor a `max-w-7xl` (1280 px). Esto afecta también a Experimentos y Préstamos, que comparten ese panel (no los he revisado visualmente tras el cambio).
+- **Las fotos se veían pequeñas dentro de su recuadro** porque los originales traen mucho margen blanco. Las puse en 128 px y con `object-cover`, para que el equipo llene el recuadro.
+- **Error en el modal de los kits:** mostraba "Cantidad total 1 / Disponible 1" para un kit cuya tarjeta decía 10. El detalle del servidor devuelve las cantidades del padre (1) y pisaba la suma de sus piezas, que es la que muestra la lista. Ahora mandan los números de la lista, y el modal dice 10.
+- **El título del modal** (largo en los kits) quedaba apretado contra el botón de cerrar. Le di interlineado y margen.
+
 **Lo que comprobé:** `tsc` sin errores, lint sin errores, 50/50 tests, y desde la API: 152 equipos con foto y 81 sin ella, los dos kits con sus 10 y 35 piezas, y el detalle del kit con ubicación y historial.
 
 **Lo que NO pude comprobar:** no he visto la pantalla renderizada. Este equipo no tiene Chrome y la captura automática con Brave se cuelga. Falta que alguien revise a ojo cómo queda en escritorio y en móvil, sobre todo el modal con un kit largo.
