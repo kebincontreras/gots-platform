@@ -1,8 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { ArrowLeft, ImageOff, MapPin, User } from "lucide-react"
-import { Card } from "@/components/ui/card"
+import { ArrowLeft, User } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { GROUP_PROFESSORS, type GroupProfessor } from "@/lib/lab-group-professors"
 import { getImagePath } from "@/lib/utils"
@@ -205,15 +204,16 @@ function LabCatalogueView({ professor, onBack }: { professor: GroupProfessor; on
       <p className="mt-4 text-sm text-muted-foreground" role="status">{message}</p>
 
       {loading ? (
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="animate-pulse gap-0 overflow-hidden p-0">
-              <div className="h-48 bg-muted" />
-              <div className="space-y-2 p-4">
+            <div key={i} className="flex animate-pulse gap-3 rounded-md border p-4">
+              <div className="h-16 w-16 shrink-0 rounded bg-muted" />
+              <div className="flex-1 space-y-2">
                 <div className="h-5 w-3/4 rounded bg-muted" />
                 <div className="h-4 w-1/2 rounded bg-muted" />
+                <div className="h-4 w-2/3 rounded bg-muted" />
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -222,45 +222,20 @@ function LabCatalogueView({ professor, onBack }: { professor: GroupProfessor; on
           <p className="mt-2 text-sm text-muted-foreground">Intenta seleccionar otra ubicación o refina tu búsqueda.</p>
         </div>
       ) : (
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
           {items.map((item) => (
-            <Card key={item.id} className="group cursor-pointer gap-0 overflow-hidden p-0 transition-shadow hover:shadow-lg" onClick={() => open(item)}>
-              <div className="relative h-48 w-full border-b bg-white">
-                {hasImage(item) ? (
-                  <img src={imageSrc(item)} alt={item.name} loading="lazy" decoding="async" className="h-full w-full object-contain p-2" />
-                ) : (
-                  <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-muted/40 text-muted-foreground">
-                    <ImageOff aria-hidden className="h-10 w-10 opacity-60" />
-                    <span className="text-xs">No hay imagen</span>
-                  </div>
-                )}
-                {item.quantity_reserved > 0 && (
-                  <span className="absolute right-2 top-2 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900 dark:text-amber-200">{item.quantity_reserved} reservado</span>
-                )}
-              </div>
-              <div className="flex flex-1 flex-col gap-3 p-4">
+            <button type="button" key={item.id} className="rounded-md border p-4 text-left hover:bg-muted" onClick={() => open(item)}>
+              <div className="flex gap-3">
+                {hasImage(item) && <img className="h-16 w-16 shrink-0 rounded object-cover" src={imageSrc(item)} alt="" loading="lazy" decoding="async" />}
                 <div>
-                  <h3 className="line-clamp-2 text-base font-semibold leading-snug">{item.name}</h3>
-                  {item.reference && <p className="mt-1 text-xs text-muted-foreground">Ref: {item.reference}</p>}
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {item.category && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{item.category}</span>}
-                    {kitPieces(item) > 0 && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Kit · {kitPieces(item)} piezas</span>}
+                  <div className="font-medium">{item.name}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">{item.reference || "Sin referencia"} · {item.location} · {item.category || "Sin categoría"}</div>
+                  <div className="mt-2 text-sm">
+                    {item.quantity_available}/{item.quantity_total} disponibles · {item.quantity_reserved} reservadas{kitPieces(item) > 0 ? ` · kit con ${kitPieces(item)} piezas` : ""}
                   </div>
                 </div>
-                {item.description && <p className="line-clamp-2 text-sm text-muted-foreground">{item.description}</p>}
-                {item.location && (
-                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin aria-hidden className="h-4 w-4 shrink-0" />
-                    {item.location}{buildingOf(item) ? ` · ${buildingOf(item)}` : ""}
-                  </p>
-                )}
-                <div className="mt-auto flex items-center justify-between border-t pt-3">
-                  <span className="text-sm text-muted-foreground">Disponible:</span>
-                  <span className={`text-sm font-semibold ${item.quantity_available === 0 ? "text-red-600 dark:text-red-400" : ""}`}>{item.quantity_available}/{item.quantity_total}</span>
-                </div>
-                <button type="button" onClick={(e) => { e.stopPropagation(); open(item) }} className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">Ver disponibilidad</button>
               </div>
-            </Card>
+            </button>
           ))}
         </div>
       )}
