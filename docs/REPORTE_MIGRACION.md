@@ -111,6 +111,25 @@ Lo que comprobé: los dos inician sesión, cada uno entra a su panel y es rediri
 - Limpiar en Supabase las dos `image_url` corruptas, si GOTS_LAB sigue en uso.
 - Conviene rotar la clave `service_role` de Supabase cuando termine la migración, por higiene, ya que se ha usado desde varias herramientas.
 
+### 7. Cuadrícula con fotos y modal de disponibilidad (rama `feat/inventario-cuadricula-modal`)
+
+**Qué pasaba:** el catálogo de Labs era una lista compacta: una miniatura de 64 px junto a una línea de texto. GOTS_LAB tiene tarjetas con la foto arriba y un modal con la disponibilidad completa. Además había dos detalles que desentonaban:
+- Todos los equipos decían "kit con 0 piezas". El motivo es que Postgres devuelve los conteos como texto (`"0"`), y en JavaScript el texto `"0"` cuenta como verdadero, así que la condición `kit_children_count ? ...` siempre se cumplía. En el almacén local de pruebas el valor llega vacío y no se nota, pero en producción sí.
+- Los equipos sin foto quedaban sin nada en ese espacio.
+
+**Qué hice** (`components/laboratory/lab-catalogue-workspace.tsx`, que de paso reescribí en un formato legible; antes era una sola línea por función):
+- **Cuadrícula de tarjetas** (1, 2 o 3 columnas según el ancho), con la misma estructura que GOTS_LAB: foto arriba, nombre, referencia, categoría, descripción corta, ubicación con el edificio, "Disponible: x/y" y el botón "Ver disponibilidad". Estética de la plataforma nueva (sus tarjetas, bordes y colores). Las fotos se muestran completas sobre fondo blanco (`object-contain`) y no recortadas, porque son fotos de producto con fondo blanco y recortarlas cortaría los equipos. Si el equipo tiene unidades reservadas aparece una insignia.
+- **Marcador "No hay imagen"** para los equipos sin foto (en este momento 81 de 233) y un esqueleto de carga mientras llegan los datos.
+- **Modal de disponibilidad**, también como el original: foto, categoría, caja, descripción, piezas del kit con su estado (Disponible/Reservada), "Inventario a cargo de", ubicación, y los cuatro números (cantidad total, disponible, reservado y porcentaje disponible) con avisos cuando no queda nada o hay unidades reservadas. Mantuve lo que ya tenía la plataforma y GOTS_LAB no: el historial de reservas y el botón "Seleccionar para préstamo". Lo hice con el componente `Dialog` de la plataforma, que gestiona el foco, el cierre con Escape y la accesibilidad.
+- El conteo de piezas del kit ahora se convierte a número antes de usarlo, y la etiqueta solo sale en los kits de verdad ("Kit · 10 piezas").
+- Buscar con Enter, además del botón.
+
+**Lo que comprobé:** `tsc` sin errores, lint sin errores, 50/50 tests, y desde la API: 152 equipos con foto y 81 sin ella, los dos kits con sus 10 y 35 piezas, y el detalle del kit con ubicación y historial.
+
+**Lo que NO pude comprobar:** no he visto la pantalla renderizada. Este equipo no tiene Chrome y la captura automática con Brave se cuelga. Falta que alguien revise a ojo cómo queda en escritorio y en móvil, sobre todo el modal con un kit largo.
+
+**Pendiente:** que se vea el estado de reservas de verdad. En el almacén local no hay solicitudes, así que la insignia "reservado" y los avisos del modal no se han visto con datos reales.
+
 ---
 
 ## Hallazgos pendientes
