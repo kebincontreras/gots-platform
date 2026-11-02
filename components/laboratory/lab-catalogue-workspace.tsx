@@ -206,8 +206,8 @@ function LabCatalogueView({ professor, onBack }: { professor: GroupProfessor; on
       {loading ? (
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex animate-pulse gap-3 rounded-md border p-4">
-              <div className="h-16 w-16 shrink-0 rounded bg-muted" />
+            <div key={i} className="flex min-h-40 animate-pulse items-center gap-6 rounded-xl border p-6">
+              <div className="h-28 w-28 shrink-0 rounded-lg bg-muted" />
               <div className="flex-1 space-y-2">
                 <div className="h-5 w-3/4 rounded bg-muted" />
                 <div className="h-4 w-1/2 rounded bg-muted" />
@@ -224,13 +224,13 @@ function LabCatalogueView({ professor, onBack }: { professor: GroupProfessor; on
       ) : (
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {items.map((item) => (
-            <button type="button" key={item.id} className="rounded-md border p-4 text-left hover:bg-muted" onClick={() => open(item)}>
-              <div className="flex gap-3">
-                {hasImage(item) && <img className="h-16 w-16 shrink-0 rounded object-cover" src={imageSrc(item)} alt="" loading="lazy" decoding="async" />}
-                <div>
-                  <div className="font-medium">{item.name}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">{item.reference || "Sin referencia"} · {item.location} · {item.category || "Sin categoría"}</div>
-                  <div className="mt-2 text-sm">
+            <button type="button" key={item.id} className="flex min-h-40 items-center rounded-xl border p-6 text-left transition-colors hover:bg-muted" onClick={() => open(item)}>
+              <div className="flex w-full items-center gap-6">
+                {hasImage(item) && <img className="h-28 w-28 shrink-0 rounded-lg bg-white object-contain" src={imageSrc(item)} alt="" loading="lazy" decoding="async" />}
+                <div className="min-w-0">
+                  <div className="text-xl font-medium leading-snug">{item.name}</div>
+                  <div className="mt-2 text-base text-muted-foreground">{item.reference || "Sin referencia"} · {item.location} · {item.category || "Sin categoría"}</div>
+                  <div className="mt-3 text-lg">
                     {item.quantity_available}/{item.quantity_total} disponibles · {item.quantity_reserved} reservadas{kitPieces(item) > 0 ? ` · kit con ${kitPieces(item)} piezas` : ""}
                   </div>
                 </div>
