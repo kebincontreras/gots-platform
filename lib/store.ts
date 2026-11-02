@@ -173,7 +173,12 @@ function getPostgresUrl(): string | null {
   )
 }
 
-let pgSqlSingleton: ReturnType<typeof neon> | null = null
+// El cliente de Neon v1 ya no acepta genéricos en la plantilla (sql<T>`...`) y
+// devuelve una unión de tipos. Lo envolvemos en una firma propia para mantener
+// el tipado por consulta que usa el resto del archivo.
+type PgSql = <T = Record<string, any>[]>(strings: TemplateStringsArray, ...values: any[]) => Promise<T>
+
+let pgSqlSingleton: PgSql | null = null
 let labPgPool: Pool | null = null
 let pgInitialized = false
 
@@ -181,7 +186,7 @@ function getPgSql() {
   if (pgSqlSingleton) return pgSqlSingleton
   const url = getPostgresUrl()
   if (!url) return null
-  pgSqlSingleton = neon(url)
+  pgSqlSingleton = neon(url) as unknown as PgSql
   return pgSqlSingleton
 }
 
@@ -1544,7 +1549,12 @@ export async function createDmMessage(threadId: string, userId: string, message:
 }
 
 export async function createNotification(
-  input: Omit<Notification, "createdAt" | "readAt" | "id"> & { id?: string },
+  input: Omit<Notification, "createdAt" | "readAt" | "id" | "body" | "url" | "meta"> & {
+    id?: string
+    body?: string | null
+    url?: string | null
+    meta?: Record<string, any> | null
+  },
 ): Promise<Notification> {
   const createdAt = nowIso()
   const id = input.id || crypto.randomUUID()
@@ -1556,7 +1566,7 @@ export async function createNotification(
     if (!sql) throw new Error("Database not configured: missing DATABASE_URL/POSTGRES_URL")
     await ensurePgSchema()
     await sql`INSERT INTO notifications (id, user_id, type, title, body, url, meta, created_at, read_at)
-      VALUES (${id}, ${input.userId}, ${input.type}, ${input.title}, ${input.body}, ${input.url}, ${metaJson}, ${createdAt}, ${readAt})`
+      VALUES (${id}, ${input.userId}, ${input.type}, ${input.title}, ${input.body ?? null}, ${input.url ?? null}, ${metaJson}, ${createdAt}, ${readAt})`
     return { ...(input as any), id, createdAt, readAt }
   }
 
@@ -1590,7 +1600,7 @@ export async function createEditorialNotifications(input: {
     await ensurePgSchema()
     await Promise.all(recipients.map(async (userId) => {
       await sql`INSERT INTO notifications (id, user_id, type, title, body, url, meta, created_at, read_at)
-        SELECT ${crypto.randomUUID()}, ${userId}, ${input.type}, ${input.title}, ${input.body}, ${input.url}, ${metaJson}, ${createdAt}, NULL
+        SELECT ${crypto.randomUUID()}, ${userId}, ${input.type}, ${input.title}, ${input.body ?? null}, ${input.url ?? null}, ${metaJson}, ${createdAt}, NULL
         WHERE NOT EXISTS (
           SELECT 1 FROM notifications
           WHERE user_id = ${userId}
@@ -1725,7 +1735,7 @@ export async function markMembershipRequestNotificationsResolved(requestId: stri
   transaction()
 }
 
-export async function getUserIdsByEmails(emails: string[]): Promise<string[]> {
+export async function getUserIdsByEmails(emails: readonly string[]): Promise<string[]> {
   const normalized = Array.from(new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean)))
   if (normalized.length === 0) return []
 

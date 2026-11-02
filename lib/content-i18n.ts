@@ -140,7 +140,7 @@ export function formatDateByLanguage(language: Language, date?: string, fallback
 }
 
 export function localizeNewsItem<T extends { id: number; date?: string; dateFormatted?: string; readTime?: string }>(
-  item: T & NewsFields,
+  item: T,
   language: Language,
 ) {
   const byId = NEWS_TRANSLATIONS[item.id]?.[language]

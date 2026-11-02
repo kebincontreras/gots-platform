@@ -36,13 +36,25 @@ Este documento es la bitácora de lo que voy encontrando y arreglando. La idea e
 **Qué pasaba:** la portada de `/laboratorio` mostraba el texto "Labs" como título.
 **Qué hice:** en `components/laboratory/lab-overview.tsx` cambié ese texto por el mismo logo animado. Dejé un `h1` oculto ("GOTS-Lab") para que lectores de pantalla y buscadores sigan encontrando el título.
 
+### 3. Errores de TypeScript (rama `fix/typescript-errors`)
+**Qué pasaba:** `next.config.mjs` tenía `ignoreBuildErrors: true`, así que el build salía bien aunque `npx tsc --noEmit` daba 38 errores. Eso es peligroso: no sabíamos si había bugs reales escondidos debajo.
+**Causas (eran pocas):**
+- Faltaban los paquetes de tipos `@types/bcryptjs` y `@types/better-sqlite3`, y `vaul` (que usa `components/ui/drawer.tsx`) ni siquiera estaba en `package.json`, aunque el componente lo importa.
+- En `lib/store.ts`, las consultas a Postgres usaban `sql<Tipo>\`...\``, pero la versión actual del cliente de Neon no acepta genéricos ahí. Envolví el cliente en un tipo propio (`PgSql`); es solo de tipos, el comportamiento no cambia.
+- `createNotification` obligaba a pasar `body`, `url` y `meta` aunque varios llamadores no los envían. Los hice opcionales. Además, en la rama de Postgres pasaba `undefined` directo a la consulta; ahora se convierte a `null`, como ya hacía la rama de SQLite. Este sí podía fallar en producción.
+- `getUserIdsByEmails` recibía `string[]` pero se le pasaba una lista de solo lectura; ahora acepta `readonly string[]`.
+- `localizeNewsItem` pedía `T & NewsFields`, y la interfaz local de noticias chocaba con eso. Bastaba con pedir `T`.
+- Dos funciones de Labs en archivos `.mjs` tenían tipos mal inferidos (valores por defecto `null`); las anoté con JSDoc.
+**Resultado:** `tsc` pasa de 38 errores a 0, el `build` de producción compila sin `ignoreBuildErrors` (lo quité para que no vuelva a esconderse nada), y los 50 tests siguen pasando.
+**Ojo:** `package-lock.json` cambió bastante (varios cientos de líneas) porque mi versión de npm lo reescribe distinto a como estaba. Y `pnpm-lock.yaml` quedó desactualizado respecto a las tres dependencias nuevas. Hay que decidir qué gestor se usa de verdad (ver hallazgo 6).
+
 ---
 
 ## Hallazgos pendientes
 
 Lo que encontré en la primera pasada, ordenado más o menos por prioridad:
 
-1. **Errores de TypeScript escondidos.** `next.config.mjs` tiene `ignoreBuildErrors: true`, así que el build pasa aunque `tsc` reporta 38 errores (21 en `lib/store.ts`, el resto en rutas `/api/*`, `noticias` y `news-section`). Es lo que voy a atacar primero.
+1. ~~Errores de TypeScript escondidos.~~ Resuelto, ver el punto 3 arriba.
 2. **`npm run lint` no funciona.** Falta la configuración que pide ESLint 9.
 3. **Páginas de GOTS_LAB que no existen todavía en la plataforma:** `/prestamos/solicitar`, `/prestamos/detalle`, `/experiments/new` (el wizard de 6 pasos), `/accompany`, `/profile`, `/report` y `/forgot-password`. Hay que decidir con el grupo cuáles son imprescindibles.
 4. **`/ramas` devuelve 404.** Solo existe `/ramas/time-reverse-imaging`. Probablemente es normal, pero hay que confirmar que ningún enlace apunte a `/ramas`.
