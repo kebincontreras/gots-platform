@@ -77,17 +77,39 @@ Lo que comprobé: los dos inician sesión, cada uno entra a su panel y es rediri
 - Un cambio pequeño en `lib/lab-local-fixture-store.mjs`: si ya hay inventario real cargado, el almacén local deja de añadir sus 4 equipos de demostración, para que no se mezclen.
 - Dejé la base local en un archivo persistente (`data/lab-fixture.sqlite`) en vez de `/tmp`, que el sistema puede borrar al reiniciar.
 
-**Resultado:** 231 equipos principales y 45 piezas de kit (276 registros, 811 unidades en total), repartidos así: Armario #1 (23), Armario #2 (106), Armario #3 (33), Armario #4 (25), Cajón #1 (10), Cajón #2 (14), Cajón #3 (20). Las 7 ubicaciones, 38 categorías y las cajas de Lentes, Retardadores, Espejos y Divisores de haz salen en el catálogo. Lo comprobé desde la API con los dos usuarios de prueba, y los 50 tests siguen pasando.
+**Resultado de esta primera pasada (desde el Excel):** 231 equipos principales y 45 piezas de kit. Esta versión quedó superada por la entrada 6: después comparé con la base viva y el Excel estaba desactualizado.
 
-**Observaciones sobre los datos:**
-- **Las categorías del Excel tienen variantes de escritura.** Hay "Laseres", "Láseres", "láseres" y "lásers"; "Micro Desplazamientos", "Micro desplazamientos" y "Miro desplazamientos"; "Kits dilvulgación" y "Kits divulgativos"; "Opto mecáncia" y "Opto mecánica"; y fuentes/Fuentes. GOTS_LAB las muestra tal cual, y yo las respeté para que los dos sitios coincidan. Al filtrar por categoría, un mismo tipo de equipo queda partido en varias entradas. Lo ideal es corregir el Excel (o normalizarlas al importar), pero es decisión del grupo.
-- **Esto sale del Excel, no de la base viva de GOTS_LAB.** No me conecté a Supabase (los propios documentos de la migración piden no tocarlo). Si en GOTS_LAB alguien cambió cantidades o añadió equipos directamente en la base después de importar el Excel, eso no está aquí. Vale la pena que alguien con acceso compare totales.
-- **Sin fotos.** El Excel solo trae enlaces remotos (Thorlabs y similares) y la plataforma, a propósito, no usa enlaces remotos: espera imágenes WebP locales. Los equipos aparecen sin imagen hasta que se genere ese paquete de imágenes.
+**Observaciones sobre los datos (primera pasada):**
+- Las categorías del Excel tenían variantes de escritura ("Laseres", "láseres", "lásers", "Opto mecáncia"...), 38 en total. En la base viva ya están corregidas (ver entrada 6).
 - **Fotos de los profesores.** Uso las mismas que la página de Equipo (`public/team/<carpeta>/`). Hay foto para cinco de los seis; Jader Guerrero no tiene carpeta, así que su tarjeta lleva un icono. Ojo con un detalle que me cogió en una primera versión: `public/equipo.json` apunta la foto de Rafael a `/team/Rafael.JPG`, pero ese archivo no existe (está en `/team/Rafael torres amaris/Rafael.JPG`). La página de Equipo no se rompe porque resuelve las fotos con una tabla de alias en el código, pero el JSON tiene la ruta mal.
 
 **Lo que NO hice, a propósito:** no toqué producción (Neon). La lista de profesores es una constante en el código, no una tabla, porque el esquema de producción de Labs no tiene tabla de profesores ni profesor por ubicación, y cambiar el esquema de producción no es algo que deba decidir yo solo. Para llevar este inventario a producción, el camino es el que dejó preparado Kebin: `inventario_completo.json` + imágenes, a través de `prepare-lab-inventory-import.mjs`. El JSON ya está listo para eso.
 
 **Pendiente en este módulo:** el catálogo sigue siendo la versión compacta de la plataforma. GOTS_LAB tiene una cuadrícula con fotos, un modal con porcentaje de disponibilidad y un aviso de reservas activas, que aquí todavía no están.
+
+### 6. Inventario desde la base viva de GOTS_LAB, con imágenes (rama `feat/inventario-desde-supabase`)
+
+**Contexto:** como tengo autorización sobre el proyecto de Supabase de GOTS_LAB, comparé lo que había sacado del Excel con la base viva. Lo hice solo con lecturas (`GET` a la API REST), sin escribir nada allí. Las credenciales las toma el script en el momento desde `GOTS_LAB/.env.local`; no se copian a este repo ni se imprimen.
+
+**Lo que encontré al comparar:**
+- La base viva tiene **278 registros** (233 equipos principales + 45 piezas de kit, 815 unidades). El Excel daba 276, así que **estaba desactualizado**: hay equipos y ajustes de nombre y referencia posteriores. En los equipos que coinciden, las cantidades y las cajas son idénticas.
+- Las **categorías ya están corregidas** en la base viva: 29, frente a las 38 que salían del Excel con erratas. Con esto, el problema que anoté en la entrada 5 queda resuelto sin tener que normalizar nada.
+- **152 equipos tienen imagen** (WebP, 1 MB en total, ninguna pasa de 22 KB).
+- **Dos filas tienen la URL de imagen corrupta** en la base viva: `image_url` empieza con `upload:200 https://...`, un resto de un script de subida. Las imágenes existen y se descargan extrayendo la URL, pero conviene limpiar esas dos filas en Supabase.
+- Los 6 profesores están en `group_professors` en el mismo orden que usé (Rafael activo, los otros 5 inactivos). Ninguno tiene `image_url` en esa tabla, así que las fotos siguen saliendo de la página de Equipo.
+
+**Qué hice:**
+- `scripts/export-gots-lab-supabase.mjs` (`npm run export-lab-supabase`): exporta profesores, ubicaciones e inventario a `data/supabase-export/` y descarga las imágenes. Solo lectura.
+- `scripts/import-gots-lab-inventory.mjs` ahora toma por defecto ese export (`--source supabase`), conserva **los ids originales** y las imágenes, y deja el Excel como respaldo (`--source excel`). Al cargar en local reemplaza lo importado antes, para no duplicar.
+- Las imágenes se sirven en local desde una carpeta (`GOTS_LAB_LOCAL_INVENTORY_IMAGES`), solo en modo desarrollo, solo con sesión (sin ella devuelve 403) y validando que el id sea un UUID, para que no se pueda pedir otra ruta. El catálogo ya las muestra.
+- Validé el `inventario_completo.json` resultante con `prepare-lab-inventory-import.mjs`, el script de Kebin para producción: acepta las 278 filas, 7 ubicaciones y 152 imágenes. Generé el SQL solo como archivo temporal para comprobarlo; no lo ejecuté contra ninguna base.
+
+**Resultado:** el catálogo local muestra los 233 equipos con sus 29 categorías, las cajas, los dos kits (10 y 35 piezas) y 152 fotos.
+
+**Pendiente / para decidir:**
+- Producción sigue sin tocarse. Cuando el grupo decida llevar el inventario a Neon, el paquete (`data/inventario_completo.json` + `data/supabase-export/imagenes`) ya está listo para el script de Kebin.
+- Limpiar en Supabase las dos `image_url` corruptas, si GOTS_LAB sigue en uso.
+- Conviene rotar la clave `service_role` de Supabase cuando termine la migración, por higiene, ya que se ha usado desde varias herramientas.
 
 ---
 
