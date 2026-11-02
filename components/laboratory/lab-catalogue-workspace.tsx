@@ -228,7 +228,7 @@ function LabCatalogueView({ professor, onBack }: { professor: GroupProfessor; on
           {items.map((item) => (
             <button type="button" key={item.id} className="flex min-h-44 items-center rounded-xl border p-6 text-left transition-colors hover:bg-muted" onClick={() => open(item)}>
               <div className="flex w-full items-center gap-5">
-                {hasImage(item) && <img className="h-32 w-32 shrink-0 rounded-lg bg-white object-cover" src={imageSrc(item)} alt="" loading="lazy" decoding="async" />}
+                {hasImage(item) && <img className="h-32 w-32 shrink-0 rounded-lg bg-white object-contain" src={imageSrc(item)} alt="" loading="lazy" decoding="async" />}
                 <div className="min-w-0">
                   <div className="text-xl font-medium leading-snug">{item.name}</div>
                   <div className="mt-2 text-base text-muted-foreground">{item.reference || "Sin referencia"} · {item.location} · {item.category || "Sin categoría"}</div>

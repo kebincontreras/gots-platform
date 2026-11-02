@@ -8,6 +8,20 @@ Este documento es la bitácora de lo que voy encontrando y arreglando. La idea e
 
 ---
 
+## Declaración de uso de inteligencia artificial
+
+Este trabajo se hizo con ayuda de un asistente de IA (Claude, de Anthropic, a través de Claude Code). Lo digo abiertamente porque me parece lo honesto y porque afecta a cómo conviene revisar lo que hay aquí.
+
+**En qué se usó:** exploración del código de los dos repositorios, escritura de los scripts de importación y exportación de inventario, los cambios en los componentes de Labs, la corrección de los errores de TypeScript y la configuración de ESLint, y la redacción de este reporte.
+
+**Qué revisé yo:** las decisiones de qué tocar y qué no, los datos del inventario contra GOTS_LAB, y el aspecto de las pantallas. Nada se dio por bueno solo porque compilara: cada cambio se verificó con los tests del repo (50/50), `tsc`, el lint, el build de producción, y peticiones reales a la API con sesión iniciada. Las pantallas se revisaron con capturas del navegador, no solo leyendo el código.
+
+**Dónde se equivocó, para que conste:** el asistente dio por buenos varios cambios de aspecto sin haberlos visto renderizados, y durante dos rondas insistió en que estaban aplicados cuando en pantalla no se notaba ningún cambio. El problema real (el ancho del contenedor) solo apareció al fotografiar la página. También propuso en una primera versión una ruta de imagen que no existía (`/team/Rafael.JPG`). Son errores que se detectaron comprobando, no leyendo.
+
+**Qué implica para quien revise esto:** el código es legible y está comentado, pero conviene leerlo como lo que es, código que necesita revisión humana antes de ir a producción. Nada de lo que hay aquí se ha ejecutado contra la base de datos de producción. Sobre Supabase de GOTS_LAB solo se hicieron lecturas.
+
+---
+
 ## Cómo está montado el entorno de pruebas
 
 - El repo está clonado en `Desktop/U/gots-platform`, al lado de `GOTS_LAB`, que uso como referencia de cómo debe verse y comportarse la web.
@@ -62,7 +76,7 @@ Lo que comprobé: los dos inician sesión, cada uno entra a su panel y es rediri
 **Qué pasaba:** el script `lint` existía, pero ESLint no estaba instalado como dependencia y no había archivo de configuración. `npx` descargaba la versión 10 sobre la marcha y se quejaba de que faltaba la migración a la configuración nueva. En la práctica, el proyecto nunca pasó un lint.
 **Qué hice:** instalé `eslint@9` y `eslint-config-next@16.2.6` (la misma versión que Next) y creé `eslint.config.mjs`.
 **Lo que apareció:** al ejecutarlo por primera vez salieron 361 problemas acumulados: 251 usos de `any`, 25 `setState` dentro de efectos, 25 `<img>` en lugar de `<Image>`, 23 `require()` en los scripts de Node, y poco más. Casi todo es estilo heredado de código generado, no bugs. Revisé a mano los pocos casos que podían serlo (los `<a>` del header, los `@ts-ignore` de katex, y el `Math.random` de `ui/sidebar.tsx`) y son intencionales o vienen de la plantilla de shadcn.
-**Decisión:** dejé esas reglas como *aviso* en vez de error, y apagué `no-require-imports` en `scripts/` y en los `.mjs` de Labs, que son CommonJS por diseño. Resultado: 0 errores y 338 avisos que siguen a la vista. La idea es limpiarlos por tandas más adelante y endurecer las reglas cuando toque. No me pareció razonable tocar 300 sitios en esta ronda sin poder probar cada uno.
+**Decisión:** dejé esas reglas como *aviso* en vez de error, y apagué `no-require-imports` en `scripts/` y en los `.mjs` de Labs, que son CommonJS por diseño. Resultado: 0 errores y 338 avisos que siguen a la vista (335 tras reescribir el catálogo, en la entrada 7). La idea es limpiarlos por tandas más adelante y endurecer las reglas cuando toque. No me pareció razonable tocar 300 sitios en esta ronda sin poder probar cada uno.
 
 ### 5. Módulo de inventario: profesores primero y datos reales de GOTS-Lab (rama `feat/inventario-gots-lab`)
 
@@ -85,7 +99,7 @@ Lo que comprobé: los dos inician sesión, cada uno entra a su panel y es rediri
 
 **Lo que NO hice, a propósito:** no toqué producción (Neon). La lista de profesores es una constante en el código, no una tabla, porque el esquema de producción de Labs no tiene tabla de profesores ni profesor por ubicación, y cambiar el esquema de producción no es algo que deba decidir yo solo. Para llevar este inventario a producción, el camino es el que dejó preparado Kebin: `inventario_completo.json` + imágenes, a través de `prepare-lab-inventory-import.mjs`. El JSON ya está listo para eso.
 
-**Pendiente en este módulo:** el catálogo sigue siendo la versión compacta de la plataforma. GOTS_LAB tiene una cuadrícula con fotos, un modal con porcentaje de disponibilidad y un aviso de reservas activas, que aquí todavía no están.
+**Pendiente en este módulo (resuelto después):** el catálogo era la versión compacta de la plataforma, sin el modal de disponibilidad de GOTS_LAB. Se abordó en la entrada 7.
 
 ### 6. Inventario desde la base viva de GOTS_LAB, con imágenes (rama `feat/inventario-desde-supabase`)
 
@@ -111,7 +125,9 @@ Lo que comprobé: los dos inician sesión, cada uno entra a su panel y es rediri
 - Limpiar en Supabase las dos `image_url` corruptas, si GOTS_LAB sigue en uso.
 - Conviene rotar la clave `service_role` de Supabase cuando termine la migración, por higiene, ya que se ha usado desde varias herramientas.
 
-### 7. Cuadrícula con fotos y modal de disponibilidad (rama `feat/inventario-cuadricula-modal`)
+### 7. Fotos en el catálogo y modal de disponibilidad (rama `feat/inventario-cuadricula-modal` y tres ajustes)
+
+> Esta entrada es una cronología: empecé con una cuadrícula de tarjetas grandes y, tras la revisión del responsable, terminé en una lista de dos columnas. **El estado final es la lista**, descrita en los ajustes del final.
 
 **Qué pasaba:** el catálogo de Labs era una lista compacta: una miniatura de 64 px junto a una línea de texto. GOTS_LAB tiene tarjetas con la foto arriba y un modal con la disponibilidad completa. Además había dos detalles que desentonaban:
 - Todos los equipos decían "kit con 0 piezas". El motivo es que Postgres devuelve los conteos como texto (`"0"`), y en JavaScript el texto `"0"` cuenta como verdadero, así que la condición `kit_children_count ? ...` siempre se cumplía. En el almacén local de pruebas el valor llega vacío y no se nota, pero en producción sí.
@@ -130,15 +146,18 @@ Lo que comprobé: los dos inician sesión, cada uno entra a su panel y es rediri
 
 **Tercer ajuste, con la página ya vista renderizada (rama `fix/inventario-modal-y-fotos`):** el responsable seguía viendo "todo igual de pequeño". Hasta ese momento yo solo había comprobado el código y la API; para revisarlo de verdad monté un navegador automático (Playwright sobre Brave, instalado en una carpeta temporal fuera del repo), inicié sesión con el usuario estudiante y fotografié la página. Lo que vi:
 - **La causa del "pequeño" era el ancho de la página, no el tamaño de las tarjetas.** Las páginas de Labs (`lab-access-panel.tsx`) usaban un contenedor de `max-w-5xl` (1024 px), y dentro de él dos tarjetas anidadas con relleno. Quedaban dos columnas de ~440 px con la foto a la izquierda, y el texto se partía en dos líneas ("0 / reservadas"). Pasé el contenedor a `max-w-7xl` (1280 px). Esto afecta también a Experimentos y Préstamos, que comparten ese panel (no los he revisado visualmente tras el cambio).
-- **Las fotos se veían pequeñas dentro de su recuadro** porque los originales traen mucho margen blanco. Las puse en 128 px y con `object-cover`, para que el equipo llene el recuadro.
+- **Las fotos se veían pequeñas dentro de su recuadro** porque los originales traen mucho margen blanco. Las puse en 128 px y con `object-cover`, para que el equipo llene el recuadro. (Esto se revirtió en el cuarto ajuste: recortaba las fotos alargadas.)
 - **Error en el modal de los kits:** mostraba "Cantidad total 1 / Disponible 1" para un kit cuya tarjeta decía 10. El detalle del servidor devuelve las cantidades del padre (1) y pisaba la suma de sus piezas, que es la que muestra la lista. Ahora mandan los números de la lista, y el modal dice 10.
 - **El título del modal** (largo en los kits) quedaba apretado contra el botón de cerrar. Le di interlineado y margen.
 
-**Lo que comprobé:** `tsc` sin errores, lint sin errores, 50/50 tests, y desde la API: 152 equipos con foto y 81 sin ella, los dos kits con sus 10 y 35 piezas, y el detalle del kit con ubicación y historial.
+**Cuarto ajuste (rama `fix/fotos-anchas-recortadas`):** al revisar antes de subir vi que `object-cover` recortaba. Medí las 152 imágenes: 9 no son cuadradas, y 5 de ellas son 500×167 (ratio 3:1). En un recuadro cuadrado de 128 px, `object-cover` les cortaba dos tercios del ancho, y equipos como "Paquetes de objetivos de microscopio" se quedaban en un trozo irreconocible. Volví a `object-contain`. Las 143 imágenes casi cuadradas se siguen viendo igual de grandes, y las alargadas ahora se ven enteras. Comprobado con una captura filtrando por "objetivos de microscop".
 
-**Lo que NO pude comprobar:** no he visto la pantalla renderizada. Este equipo no tiene Chrome y la captura automática con Brave se cuelga. Falta que alguien revise a ojo cómo queda en escritorio y en móvil, sobre todo el modal con un kit largo.
+**Lo que comprobé:** `tsc` sin errores, lint sin errores, 50/50 tests, `next build` de producción compila, y desde la API: 152 equipos con foto y 81 sin ella, los dos kits con sus 10 y 35 piezas, y el detalle del kit con ubicación y historial. Las pantallas (lista, modal de kit y fotos alargadas) están revisadas con capturas del navegador, con sesión de estudiante iniciada.
 
-**Pendiente:** que se vea el estado de reservas de verdad. En el almacén local no hay solicitudes, así que la insignia "reservado" y los avisos del modal no se han visto con datos reales.
+**Pendiente en este módulo:**
+- El estado de reservas no se ha visto con datos reales: en el almacén local no hay solicitudes, así que la insignia "reservado" y los avisos del modal nunca se han mostrado con un número distinto de cero.
+- No está revisado en móvil ni en tablet. Solo lo he visto a 1440 px de ancho.
+- El cambio de ancho del contenedor afecta también a Experimentos y Préstamos, que comparten `lab-access-panel.tsx`. No los he revisado visualmente después.
 
 ---
 
@@ -147,7 +166,7 @@ Lo que comprobé: los dos inician sesión, cada uno entra a su panel y es rediri
 Lo que encontré en la primera pasada, ordenado más o menos por prioridad:
 
 1. ~~Errores de TypeScript escondidos.~~ Resuelto, ver el punto 3 arriba.
-2. ~~`npm run lint` no funciona.~~ Resuelto, ver el punto 4. Quedan 338 avisos por limpiar poco a poco.
+2. ~~`npm run lint` no funciona.~~ Resuelto, ver el punto 4. Quedan 335 avisos por limpiar poco a poco.
 3. **Páginas de GOTS_LAB que no existen todavía en la plataforma:** `/prestamos/solicitar`, `/prestamos/detalle`, `/experiments/new` (el wizard de 6 pasos), `/accompany`, `/profile`, `/report` y `/forgot-password`. Hay que decidir con el grupo cuáles son imprescindibles.
 4. **`/ramas` devuelve 404.** Solo existe `/ramas/time-reverse-imaging`. Probablemente es normal, pero hay que confirmar que ningún enlace apunte a `/ramas`.
 5. **Documentación desactualizada.** `README.md` y `DEPLOY.md` hablan de GitHub Pages, pero el sitio real está en Vercel.
