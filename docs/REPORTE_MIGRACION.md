@@ -48,6 +48,12 @@ Este documento es la bitácora de lo que voy encontrando y arreglando. La idea e
 **Resultado:** `tsc` pasa de 38 errores a 0, el `build` de producción compila sin `ignoreBuildErrors` (lo quité para que no vuelva a esconderse nada), y los 50 tests siguen pasando.
 **Ojo:** `package-lock.json` cambió bastante (varios cientos de líneas) porque mi versión de npm lo reescribe distinto a como estaba. Y `pnpm-lock.yaml` quedó desactualizado respecto a las tres dependencias nuevas. Hay que decidir qué gestor se usa de verdad (ver hallazgo 6).
 
+### 4. `npm run lint` no funcionaba (rama `fix/eslint-config`)
+**Qué pasaba:** el script `lint` existía, pero ESLint no estaba instalado como dependencia y no había archivo de configuración. `npx` descargaba la versión 10 sobre la marcha y se quejaba de que faltaba la migración a la configuración nueva. En la práctica, el proyecto nunca pasó un lint.
+**Qué hice:** instalé `eslint@9` y `eslint-config-next@16.2.6` (la misma versión que Next) y creé `eslint.config.mjs`.
+**Lo que apareció:** al ejecutarlo por primera vez salieron 361 problemas acumulados: 251 usos de `any`, 25 `setState` dentro de efectos, 25 `<img>` en lugar de `<Image>`, 23 `require()` en los scripts de Node, y poco más. Casi todo es estilo heredado de código generado, no bugs. Revisé a mano los pocos casos que podían serlo (los `<a>` del header, los `@ts-ignore` de katex, y el `Math.random` de `ui/sidebar.tsx`) y son intencionales o vienen de la plantilla de shadcn.
+**Decisión:** dejé esas reglas como *aviso* en vez de error, y apagué `no-require-imports` en `scripts/` y en los `.mjs` de Labs, que son CommonJS por diseño. Resultado: 0 errores y 338 avisos que siguen a la vista. La idea es limpiarlos por tandas más adelante y endurecer las reglas cuando toque. No me pareció razonable tocar 300 sitios en esta ronda sin poder probar cada uno.
+
 ---
 
 ## Hallazgos pendientes
@@ -55,7 +61,7 @@ Este documento es la bitácora de lo que voy encontrando y arreglando. La idea e
 Lo que encontré en la primera pasada, ordenado más o menos por prioridad:
 
 1. ~~Errores de TypeScript escondidos.~~ Resuelto, ver el punto 3 arriba.
-2. **`npm run lint` no funciona.** Falta la configuración que pide ESLint 9.
+2. ~~`npm run lint` no funciona.~~ Resuelto, ver el punto 4. Quedan 338 avisos por limpiar poco a poco.
 3. **Páginas de GOTS_LAB que no existen todavía en la plataforma:** `/prestamos/solicitar`, `/prestamos/detalle`, `/experiments/new` (el wizard de 6 pasos), `/accompany`, `/profile`, `/report` y `/forgot-password`. Hay que decidir con el grupo cuáles son imprescindibles.
 4. **`/ramas` devuelve 404.** Solo existe `/ramas/time-reverse-imaging`. Probablemente es normal, pero hay que confirmar que ningún enlace apunte a `/ramas`.
 5. **Documentación desactualizada.** `README.md` y `DEPLOY.md` hablan de GitHub Pages, pero el sitio real está en Vercel.
