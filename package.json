@@ -19,6 +19,7 @@
     "lint": "eslint .",
     "test:common-auth": "node --test tests/common-auth-contract.test.mjs tests/gots-access-policy.test.mjs tests/lab-module-contract.test.mjs tests/lab-production-postgres-adapter.test.mjs tests/lab-postgres-schema.test.mjs tests/lab-pglite-postgres-engine.test.mjs tests/institutional-email-contract.test.mjs tests/lab-fixture-repository.test.mjs tests/lab-loans-fixture-repository.test.mjs tests/lab-experiments-fixture-repository.test.mjs tests/lab-local-fixture-store.test.mjs",
     "create-professor": "node scripts/create-professor.js",
+    "import-lab-inventory": "node scripts/import-gots-lab-inventory.mjs",
     "create-demo-user": "node scripts/create-demo-user.js",
     "set-role": "node scripts/set-role.js",
     "seed-users": "node scripts/seed-users-from-equipo.js"
@@ -94,6 +95,7 @@
     "@types/react-dom": "^18",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.2.6",
+    "exceljs": "^4.4.0",
     "pg-mem": "3.0.14",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
