@@ -5,7 +5,7 @@ import { Menu, MoreVertical, X } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import { getPagePath } from "@/lib/utils"
+import { getImagePath, getPagePath } from "@/lib/utils"
 import { useLanguage } from "@/components/language-provider"
 import { NotificationsBell } from "@/components/notifications-bell"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -113,13 +113,15 @@ export function Header() {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <a href={getPagePath("/")} className="flex items-center">
-            <span
-              className={`text-xl font-sans font-bold transition-colors ${
-                isScrolled || forceSolidHeader ? "text-foreground" : "text-white"
-              }`}
-            >
-              GOTS Group Research
-            </span>
+            <video
+              src={getImagePath("/videos/logo.mp4")}
+              aria-label="GOTS Group Research"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="h-12 sm:h-14 md:h-16 w-auto rounded-md"
+            />
           </a>
 
           {/* Desktop Navigation */}

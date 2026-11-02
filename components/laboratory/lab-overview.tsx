@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { FlaskConical, PackageSearch, ShieldCheck, Handshake } from "lucide-react"
-import { getPagePath } from "@/lib/utils"
+import { getImagePath, getPagePath } from "@/lib/utils"
 import { LabNavigation } from "./lab-navigation"
 
 const sections = [
@@ -35,7 +35,16 @@ export function LabOverview({ authenticated }: { authenticated: boolean }) {
         <p className="text-sm font-medium text-muted-foreground">GOTS · Plataforma principal</p>
         <div className="mt-3 flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div className="max-w-3xl">
-            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Labs</h1>
+            <h1 className="sr-only">GOTS-Lab</h1>
+            <video
+              src={getImagePath("/videos/logo.mp4")}
+              aria-hidden
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="h-16 w-auto md:h-20"
+            />
             <p className="mt-3 text-muted-foreground">
               Una organización única para el laboratorio dentro de GOTS. La cuenta GOTS será la entrada única; los permisos de cada sección se mantendrán separados y explícitos.
             </p>
