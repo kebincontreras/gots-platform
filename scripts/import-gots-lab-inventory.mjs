@@ -1,9 +1,18 @@
 #!/usr/bin/env node
 /**
- * Importa el inventario de GOTS_LAB (Excel "Inventario equipo Rafael.xlsx") a
- * la plataforma, aplicando las mismas reglas que los scripts originales de
- * GOTS_LAB (seed-inventory, update-inventory-from-excel, assign-inventory-boxes
- * y seed-lens-kits):
+ * Importa el inventario de GOTS_LAB a la plataforma. Dos fuentes posibles:
+ *
+ *   --source supabase (por defecto si existe data/supabase-export/)
+ *       Lee el export de la base viva hecho con export-gots-lab-supabase.mjs.
+ *       Es la fuente de verdad: conserva los ids originales, las categorías ya
+ *       corregidas, las cajas, los kits y las imágenes.
+ *   --source excel
+ *       Reconstruye el inventario desde "Inventario equipo Rafael.xlsx" con las
+ *       mismas reglas que los scripts originales de GOTS_LAB (seed-inventory,
+ *       update-inventory-from-excel, assign-inventory-boxes y seed-lens-kits).
+ *       Solo es un respaldo: el Excel quedó atrás respecto a la base viva.
+ *
+ * Reglas del Excel:
  *
  *   - Hoja "Cajones": cajones 1-3. Hoja "Armarios": armarios 1-4.
  *   - Cada sub-tabla: Cantidad, Referencia, Categoría, Imagen, Descripción.
@@ -16,15 +25,16 @@
  *   2. Con --load-local, además lo carga (upsert idempotente) en la base
  *      SQLite local de Labs (GOTS_LAB_LOCAL_FIXTURE_DB).
  *
- * No abre ninguna conexión a Supabase, Neon ni producción. Las URLs de imagen
- * del Excel se ignoran a propósito (el import privado de la plataforma usa
- * imágenes WebP locales, no enlaces remotos).
+ * No abre ninguna conexión a Supabase, Neon ni producción (el export de
+ * Supabase es un paso aparte). Las URLs remotas de imagen se ignoran a propósito:
+ * el import privado de la plataforma usa imágenes WebP locales.
  *
  * Uso:
- *   node scripts/import-gots-lab-inventory.mjs [--xlsx ruta.xlsx] [--out data/inventario_completo.json] [--load-local]
+ *   node scripts/import-gots-lab-inventory.mjs [--source supabase|excel] [--export-dir dir]
+ *        [--xlsx ruta.xlsx] [--out data/inventario_completo.json] [--load-local]
  */
 import { createHash } from "node:crypto"
-import { mkdir, writeFile } from "node:fs/promises"
+import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { existsSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -39,6 +49,8 @@ const flag = (name, fallback) => {
 const xlsxPath = path.resolve(flag("--xlsx", path.join(root, "..", "GOTS_LAB", "Inventario equipo Rafael.xlsx")))
 const outPath = path.resolve(flag("--out", path.join(root, "data", "inventario_completo.json")))
 const loadLocal = args.includes("--load-local")
+const exportDir = path.resolve(flag("--export-dir", path.join(root, "data", "supabase-export")))
+const source = flag("--source", existsSync(path.join(exportDir, "inventory_items.json")) ? "supabase" : "excel")
 
 const BUILDING = "EDIC 001"
 const PROFESSOR = "Rafael Ángel Torres Amaris"
@@ -189,6 +201,43 @@ export async function parseInventory(file) {
   return { records, warnings }
 }
 
+/** Convierte el export de la base viva (JSON de Supabase) al formato canónico. */
+export async function parseSupabaseExport(dir) {
+  const read = async (name) => JSON.parse(await readFile(path.join(dir, name), "utf8"))
+  const [items, locations, professors] = await Promise.all([read("inventory_items.json"), read("locations.json"), read("group_professors.json")])
+  const locById = new Map(locations.map((l) => [l.id, l]))
+  const profById = new Map(professors.map((p) => [p.id, p.full_name]))
+  const warnings = []
+  const toRecord = (item) => {
+    const loc = locById.get(item.location_id)
+    if (!loc) throw new Error(`Ubicación desconocida para ${item.id}`)
+    const hasImage = existsSync(path.join(dir, "imagenes", `${item.id}.webp`))
+    if (item.image_url && !hasImage) warnings.push(`Sin imagen descargada para ${item.id} (${item.name})`)
+    return {
+      id: item.id,
+      nombre: item.name,
+      referencia: item.reference?.trim() || null,
+      descripcion: item.description?.trim() || null,
+      cantidad_total: item.quantity_total,
+      categoria: item.category || null,
+      caja: item.box_label || null,
+      ubicacion: { tipo: loc.type, numero: loc.number, etiqueta: loc.label, edificio: loc.building ?? null },
+      profesor: profById.get(loc.professor_id) ?? null,
+      imagen_local: hasImage ? `imagenes/${item.id}.webp` : null,
+      creado_en: item.created_at,
+      actualizado_en: item.updated_at,
+    }
+  }
+  const parents = items.filter((i) => !i.kit_parent_id).map(toRecord)
+  const byId = new Map(parents.map((p) => [p.id, p]))
+  for (const child of items.filter((i) => i.kit_parent_id)) {
+    const parent = byId.get(child.kit_parent_id)
+    if (!parent) { warnings.push(`Pieza de kit sin padre: ${child.id}`); continue }
+    ;(parent.elementos_del_kit ??= []).push(toRecord(child))
+  }
+  return { records: parents, warnings }
+}
+
 function summarize(records) {
   const all = records.flatMap((r) => [r, ...(r.elementos_del_kit ?? [])])
   const byLoc = new Map()
@@ -199,6 +248,8 @@ function summarize(records) {
     ubicaciones: Object.fromEntries([...byLoc].sort()),
     categorias: [...new Set(all.map((r) => r.categoria).filter(Boolean))].sort(),
     cajas: [...new Set(all.map((r) => r.caja).filter(Boolean))].sort(),
+    con_imagen: all.filter((r) => r.imagen_local).length,
+    unidades: all.reduce((n, r) => n + r.cantidad_total, 0),
   }
 }
 
@@ -214,28 +265,35 @@ async function loadIntoLocalStore(records) {
   const upsertLocation = db.prepare(`INSERT INTO lab_fixture_locations (id,type,number,label,building,professor_name) VALUES (?,?,?,?,?,?)
     ON CONFLICT(id) DO UPDATE SET label=excluded.label, building=excluded.building, professor_name=excluded.professor_name`)
   const upsertItem = db.prepare(`INSERT INTO lab_fixture_inventory (id,name,location,available,quantity_total,reference,description,image_url,location_id,category,box_label,kit_parent_id)
-    VALUES (?,?,?,1,?,?,?,NULL,?,?,?,?)
+    VALUES (?,?,?,1,?,?,?,?,?,?,?,?)
     ON CONFLICT(id) DO UPDATE SET name=excluded.name, location=excluded.location, quantity_total=excluded.quantity_total, reference=excluded.reference,
-      description=excluded.description, location_id=excluded.location_id, category=excluded.category, box_label=excluded.box_label, kit_parent_id=excluded.kit_parent_id`)
+      description=excluded.description, image_url=excluded.image_url, location_id=excluded.location_id, category=excluded.category, box_label=excluded.box_label, kit_parent_id=excluded.kit_parent_id`)
   const locId = (u) => `gots-lab-${u.tipo}-${u.numero}`
   let items = 0
+  const keep = new Set(records.flatMap((r) => [r.id, ...(r.elementos_del_kit ?? []).map((c) => c.id)]))
+  let pruned = 0
   db.transaction(() => {
+    // Quita lo importado antes con otra fuente (p. ej. ids del Excel) para no duplicar.
+    const stale = db.prepare("SELECT id, kit_parent_id FROM lab_fixture_inventory WHERE id NOT LIKE 'fixture-%'").all().filter((row) => !keep.has(row.id))
+    for (const row of stale.filter((r) => r.kit_parent_id).concat(stale.filter((r) => !r.kit_parent_id))) {
+      db.prepare("DELETE FROM lab_fixture_inventory WHERE id=?").run(row.id); pruned++
+    }
     for (const r of records) {
       upsertLocation.run(locId(r.ubicacion), r.ubicacion.tipo, r.ubicacion.numero, r.ubicacion.etiqueta, r.ubicacion.edificio, r.profesor)
-      upsertItem.run(r.id, r.nombre, r.ubicacion.etiqueta, r.cantidad_total, r.referencia, r.descripcion, locId(r.ubicacion), r.categoria, r.caja, null)
+      upsertItem.run(r.id, r.nombre, r.ubicacion.etiqueta, r.cantidad_total, r.referencia, r.descripcion, r.imagen_local ? `database:${r.id}` : null, locId(r.ubicacion), r.categoria, r.caja, null)
       items++
       for (const c of r.elementos_del_kit ?? []) {
-        upsertItem.run(c.id, c.nombre, c.ubicacion.etiqueta, c.cantidad_total, c.referencia, c.descripcion, locId(c.ubicacion), c.categoria, c.caja, r.id)
+        upsertItem.run(c.id, c.nombre, c.ubicacion.etiqueta, c.cantidad_total, c.referencia, c.descripcion, c.imagen_local ? `database:${c.id}` : null, locId(c.ubicacion), c.categoria, c.caja, r.id)
         items++
       }
     }
   })()
   db.close()
-  return { file, items }
+  return { file, items, eliminados_por_reemplazo: pruned }
 }
 
-const { records, warnings } = await parseInventory(xlsxPath)
+const { records, warnings } = source === "supabase" ? await parseSupabaseExport(exportDir) : await parseInventory(xlsxPath)
 await mkdir(path.dirname(outPath), { recursive: true })
 await writeFile(outPath, JSON.stringify(records, null, 2) + "\n")
-console.log(JSON.stringify({ excel: xlsxPath, json: outPath, ...summarize(records), avisos: warnings }, null, 2))
+console.log(JSON.stringify({ fuente: source, origen: source === "supabase" ? exportDir : xlsxPath, json: outPath, ...summarize(records), avisos: warnings }, null, 2))
 if (loadLocal) console.log("Base local:", JSON.stringify(await loadIntoLocalStore(records)))
