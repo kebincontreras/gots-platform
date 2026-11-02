@@ -23,7 +23,7 @@ export function LabAccessPanel({
   role?: string
 }) {
   return (
-    <main className="container mx-auto min-h-screen max-w-5xl px-4 pb-16 pt-28">
+    <main className="container mx-auto min-h-screen max-w-7xl px-4 pb-16 pt-28">
       <LabNavigation active={active} />
       <section className="mt-8 rounded-xl border bg-card p-6 shadow-sm">
         <p className="text-sm font-medium text-muted-foreground">GOTS · Laboratorio</p>
