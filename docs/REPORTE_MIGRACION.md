@@ -124,6 +124,8 @@ Lo que comprobé: los dos inician sesión, cada uno entra a su panel y es rediri
 - El conteo de piezas del kit ahora se convierte a número antes de usarlo, y la etiqueta solo sale en los kits de verdad ("Kit · 10 piezas").
 - Buscar con Enter, además del botón.
 
+**Ajuste posterior (rama `fix/inventario-estilo-lista`):** al enseñarle la cuadrícula al responsable del proyecto prefirió el estilo de lista compacta que ya tenía la plataforma (la captura de referencia): dos columnas, miniatura de 64 px a la izquierda y tres líneas de texto (nombre; referencia · ubicación · categoría; "x/y disponibles · n reservadas"). Los equipos sin foto no llevan marcador, el texto simplemente empieza en el borde. Volví a ese estilo y conservé el modal de disponibilidad, que se abre al pulsar un equipo. La cuadrícula grande con fotos arriba ya no está en el código. En ese estilo "kit con N piezas" solo aparece cuando el equipo es un kit de verdad: la captura de referencia lo mostraba en todos ("kit con 0 piezas"), que era el bug del conteo como texto descrito arriba.
+
 **Lo que comprobé:** `tsc` sin errores, lint sin errores, 50/50 tests, y desde la API: 152 equipos con foto y 81 sin ella, los dos kits con sus 10 y 35 piezas, y el detalle del kit con ubicación y historial.
 
 **Lo que NO pude comprobar:** no he visto la pantalla renderizada. Este equipo no tiene Chrome y la captura automática con Brave se cuelga. Falta que alguien revise a ojo cómo queda en escritorio y en móvil, sobre todo el modal con un kit largo.
