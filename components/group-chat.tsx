@@ -12,7 +12,11 @@ type Message = {
   createdAt: string
 }
 
-export function GroupChat() {
+type GroupChatProps = {
+  currentUserId: string
+}
+
+export function GroupChat({ currentUserId }: GroupChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -53,15 +57,22 @@ export function GroupChat() {
           <div className="text-sm text-muted-foreground">Sin mensajes.</div>
         ) : null}
         <div className="grid gap-2">
-          {messages.map((m) => (
-            <div key={m.id} className="rounded-md border px-3 py-2">
+          {messages.map((m) => {
+            const isMine = m.userId === currentUserId
+
+            return(
+            <div key={m.id}
+             className={`w-fit max-w-[70%] rounded-md border px-3 py-2 break-words
+             ${ isMine ? "justify-self-end" : "justify-self-start" }`}
+             >
               <div className="text-xs text-muted-foreground flex items-center justify-between gap-3">
                 <span className="font-medium text-foreground">{m.userName}</span>
                 <span>{new Date(m.createdAt).toLocaleString()}</span>
               </div>
               <div className="mt-1 text-sm whitespace-pre-wrap">{m.message}</div>
             </div>
-          ))}
+            )
+            })}
           <div ref={bottomRef} />
         </div>
       </div>
